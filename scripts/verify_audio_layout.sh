@@ -8,15 +8,15 @@ errors=0
 
 echo "[verify] Checking AIFF placement and naming under $repo_root"
 
-# 1) Any AIFF outside samples/ is not allowed
-outside=$(find . -type f -iname '*.aiff' \( -path './.*' -prune -o -print \) | grep -v '^\./samples/' || true)
+# 1) Any audio files outside samples/ are not allowed
+outside=$(find . -type f \( -iname '*.aiff' -o -iname '*.flac' \) \( -path './.*' -prune -o -print \) | grep -v '^\./samples/' || true)
 if [[ -n "$outside" ]]; then
-  echo "[error] Found AIFF files outside samples/:"
+  echo "[error] Found audio files outside samples/:"
   echo "$outside"
   errors=1
 fi
 
-# 2) Ensure AIFFs under samples/ follow samples/<letter>/<first-word>/<filename>.aiff
+# 2) Ensure audio files under samples/ follow samples/<letter>/<first-word>/<filename>.(aiff|flac)
 while IFS= read -r -d '' f; do
   rel="${f#./samples/}"
   IFS='/' read -r d1 d2 fname <<< "$rel"
@@ -49,7 +49,7 @@ while IFS= read -r -d '' f; do
     echo "[error] First folder ('$d1') must match first letter ('$exp_letter') of first word: $f"
     errors=1
   fi
-done < <(find ./samples -type f -iname '*.aiff' -print0 2>/dev/null)
+done < <(find ./samples -type f \( -iname '*.aiff' -o -iname '*.flac' \) -print0 2>/dev/null)
 
 if [[ "$errors" -ne 0 ]]; then
   echo "[verify] ❌ Layout check failed. Please run organize_audio_files.sh or fix paths."

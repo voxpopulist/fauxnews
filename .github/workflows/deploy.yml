@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths: 
       - '**/*.aiff'
+      - '**/*.flac'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
@@ -116,11 +117,11 @@ jobs:
           echo "⚠️ Database not found at transcriber/transcripts.db (will process fresh)"
         fi
 
-    - name: Convert AIFF to MP3 (mirrored into docs/)
+    - name: Convert audio to MP3 (mirrored into docs/)
       run: |
         chmod +x bin/transcribe-linux-amd64
         bin/transcribe-linux-amd64 \
-          --convert_mp3 \
+          --convert-mp3 \
           --directory samples
 
     - name: Dry run (preview NEW vs SKIP)
