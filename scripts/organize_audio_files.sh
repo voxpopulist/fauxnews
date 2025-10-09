@@ -45,14 +45,15 @@ get_first_letter() {
 
 # Main function
 main() {
+    # repo_root should be the parent directory of this scripts/ folder
     local repo_root
-    repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     
     print_status "Starting audio file organization in: $repo_root"
     print_status "Target structure: samples/[first-letter]/[first-word]/filename.aiff"
     echo
     
-    # Find all AIFF files in the repository
+    # Find all AIFF files in the repository root (not recursive)
     local audio_files=()
     while IFS= read -r -d '' file; do
         audio_files+=("$file")
@@ -176,12 +177,12 @@ EOF
 # Dry run function
 dry_run() {
     local repo_root
-    repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     
     print_status "DRY RUN: Showing what would be organized in: $repo_root"
     echo
     
-    # Find all AIFF files in the repository
+    # Find all AIFF files in the repository root
     local audio_files=()
     while IFS= read -r -d '' file; do
         audio_files+=("$file")

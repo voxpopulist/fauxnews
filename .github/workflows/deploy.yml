@@ -27,6 +27,9 @@ jobs:
       with:
         submodules: recursive
         ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+
+    - name: Verify audio layout
+      run: bash scripts/verify_audio_layout.sh
         
     - name: Setup Python
       uses: actions/setup-python@v5
@@ -63,6 +66,10 @@ jobs:
     - name: Add venv to PATH
       run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
 
+    - name: Ensure Whisper cache directories exist
+      run: |
+        mkdir -p "$HOME/.cache/whisper" "$HOME/.cache/torch"
+
     - name: Cache Whisper model files
       uses: actions/cache@v4
       with:
@@ -96,6 +103,11 @@ jobs:
         ls -la bin || true
         test -f bin/transcribe-linux-amd64
 
+    - name: Install ffmpeg (for MP3 conversion)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
+
     - name: Verify database presence
       run: |
         if [ -f transcriber/transcripts.db ]; then
@@ -104,11 +116,19 @@ jobs:
           echo "⚠️ Database not found at transcriber/transcripts.db (will process fresh)"
         fi
 
+    - name: Convert AIFF to MP3 (mirrored into docs/)
+      run: |
+        chmod +x bin/transcribe-linux-amd64
+        bin/transcribe-linux-amd64 \
+          --convert_mp3 \
+          --directory samples
+
     - name: Dry run (preview NEW vs SKIP)
       run: |
         chmod +x bin/transcribe-linux-amd64
         bin/transcribe-linux-amd64 \
           --directory samples \
+          --model turbo \
           --database transcriber/transcripts.db \
           --dry-run
 
@@ -116,6 +136,7 @@ jobs:
       run: |
         bin/transcribe-linux-amd64 \
           --directory samples \
+          --model turbo \
           --database transcriber/transcripts.db \
           --output docs/index.html \
           --github-pages-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
