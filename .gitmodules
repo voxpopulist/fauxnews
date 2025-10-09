@@ -1,0 +1,3 @@
+[submodule "transcriber"]
+	path = transcriber
+	url = git@github.com:voxpopulist/clipservatives-transcriber.git
