@@ -92,6 +92,9 @@ jobs:
         sudo xargs -a scripts/apt-packages.txt apt-get install -y
 
     - name: Run transcription script
+      env:
+        VERBOSE: "1"
+        WHISPER_VERBOSE: "1"
       run: |
         chmod +x ./scripts/transcribe_flac.sh
         ./scripts/transcribe_flac.sh

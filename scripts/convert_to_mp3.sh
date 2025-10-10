@@ -5,6 +5,14 @@
 
 set -uo pipefail
 
+VERBOSE=${VERBOSE:-0}
+if [ "$VERBOSE" = "1" ]; then
+    set -x
+fi
+
+FFMPEG_LOGLEVEL=${FFMPEG_LOGLEVEL:-info}
+FFMPEG_HIDE_BANNER=${FFMPEG_HIDE_BANNER:-0}
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -73,10 +81,16 @@ for flac_file in "${FLAC_FILES[@]}"; do
     fi
     
     print_status "Converting $(basename "$flac_file")..."
-    
-    # Convert FLAC to MP3 with lower quality settings for smaller file size
-    # Using 64k bitrate and mono audio for web streaming
-    if ffmpeg -i "$flac_file" -codec:a libmp3lame -b:a 64k -ac 1 -ar 22050 "$mp3_file" -y > /dev/null 2>&1; then
+
+    ffmpeg_cmd=(ffmpeg -loglevel "$FFMPEG_LOGLEVEL")
+    if [ "$FFMPEG_HIDE_BANNER" = "1" ]; then
+        ffmpeg_cmd+=(-hide_banner)
+    fi
+    ffmpeg_cmd+=(-i "$flac_file" -codec:a libmp3lame -b:a 64k -ac 1 -ar 22050 -y "$mp3_file")
+
+    print_status "Running: ${ffmpeg_cmd[*]}"
+
+    if "${ffmpeg_cmd[@]}"; then
         print_success "Converted: $(basename "$flac_file") → $(basename "$mp3_file")"
         ((SUCCESS_COUNT++))
     else

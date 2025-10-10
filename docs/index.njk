@@ -10,6 +10,23 @@ title: Clipservatives
   </label>
 </section>
 
+{% if tagCloud.length %}
+<section class="tags">
+  <div class="tags__header">
+    <h2 class="tags__title">Trending words</h2>
+    <p class="tags__hint">Click a word to filter clips by that term.</p>
+  </div>
+  <div class="tags__cloud">
+  {% for tag in tagCloud %}
+    <button class="tags__item" data-word="{{ tag.word }}" data-count="{{ tag.count }}" style="--tag-weight: {{ tag.weight }}">
+      <span class="tags__word">{{ tag.word }}</span>
+      <span class="tags__count">{{ tag.count }}</span>
+    </button>
+  {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 <section class="grid">
 {% for sample in samples %}
   <article class="card" data-transcript="{{ sample.transcriptText | escape }}">
@@ -54,6 +71,7 @@ title: Clipservatives
   const searchInput = document.querySelector('#search');
   const cards = Array.from(document.querySelectorAll('.card'));
   const audioPlayers = Array.from(document.querySelectorAll('.card__player'));
+  const tagButtons = Array.from(document.querySelectorAll('.tags__item'));
 
   function normalize(text) {
     return text.toLowerCase();
@@ -83,6 +101,18 @@ title: Clipservatives
           other.pause();
         }
       });
+    });
+  });
+
+  tagButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const word = button.dataset.word || '';
+      if (!word) return;
+      if (searchInput) {
+        searchInput.value = word;
+        filterCards();
+        searchInput.focus({ preventScroll: true });
+      }
     });
   });
 </script>

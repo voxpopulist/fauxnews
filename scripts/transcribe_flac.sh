@@ -3,7 +3,17 @@
 # Script to transcribe FLAC files using Whisper
 # Usage: ./transcribe_flac.sh
 
-set -e  # Exit on any error
+set -u  # Treat unset variables as an error
+
+VERBOSE=${VERBOSE:-0}
+if [ "$VERBOSE" = "1" ]; then
+    set -x
+fi
+
+WHISPER_MODEL=${WHISPER_MODEL:-turbo}
+WHISPER_LANGUAGE=${WHISPER_LANGUAGE:-English}
+WHISPER_VERBOSE=${WHISPER_VERBOSE:-1}
+WHISPER_EXTRA_ARGS=${WHISPER_EXTRA_ARGS:-}
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -55,7 +65,19 @@ for flac_file in "${FLAC_FILES[@]}"; do
     echo "Processing: $(basename "$flac_file")"
     echo "----------------------------------------"
     
-    if whisper "$flac_file" --model turbo --language English --output_dir="$INPUT_DIR"; then
+    whisper_cmd=(whisper "$flac_file" --model "$WHISPER_MODEL" --language "$WHISPER_LANGUAGE" --output_dir="$INPUT_DIR")
+    if [ "$WHISPER_VERBOSE" = "1" ]; then
+        whisper_cmd+=(--verbose True)
+    else
+        whisper_cmd+=(--verbose False)
+    fi
+    if [ -n "$WHISPER_EXTRA_ARGS" ]; then
+        whisper_cmd+=($WHISPER_EXTRA_ARGS)
+    fi
+
+    echo "Running: ${whisper_cmd[*]}"
+
+    if "${whisper_cmd[@]}"; then
         echo "✓ Successfully transcribed: $(basename "$flac_file")"
         ((SUCCESS_COUNT++))
     else
