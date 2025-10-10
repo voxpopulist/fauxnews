@@ -26,3 +26,6 @@ Thumbs.db
 
 # Git configuration files (personal identity)
 .gitconfig
+input/test-samples
+test-output*
+.envrc

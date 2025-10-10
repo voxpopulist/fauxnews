@@ -29,75 +29,75 @@ jobs:
         token: ${{ secrets.ACTIONS_TOKEN }}
         fetch-depth: 0  # Fetch full history for proper git operations
       
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+    # - name: Setup Python
+    #   uses: actions/setup-python@v5
+    #   with:
+    #     python-version: '3.11'
 
-    - name: Write Python requirements
-      run: |
-        echo "openai-whisper" > requirements.txt
+    # - name: Write Python requirements
+    #   run: |
+    #     echo "openai-whisper" > requirements.txt
 
-    - name: Cache pip download cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+    # - name: Cache pip download cache
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: ~/.cache/pip
+    #     key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-pip-
 
-    - name: Cache Python virtualenv
-      id: venv-cache
-      uses: actions/cache@v4
-      with:
-        path: .venv
-        key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}-py311
+    # - name: Cache Python virtualenv
+    #   id: venv-cache
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: .venv
+    #     key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}-py311
 
-    - name: Create venv and install deps (on cache miss)
-      if: steps.venv-cache.outputs.cache-hit != 'true'
-      run: |
-        python -m venv .venv
-        . .venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements.txt
+    # - name: Create venv and install deps (on cache miss)
+    #   if: steps.venv-cache.outputs.cache-hit != 'true'
+    #   run: |
+    #     python -m venv .venv
+    #     . .venv/bin/activate
+    #     pip install --upgrade pip
+    #     pip install -r requirements.txt
 
-    - name: Add venv to PATH
-      run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
+    # - name: Add venv to PATH
+    #   run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
 
-    - name: Ensure Whisper cache directories exist
-      run: |
-        mkdir -p "$HOME/.cache/whisper" "$HOME/.cache/torch"
+    # - name: Ensure Whisper cache directories exist
+    #   run: |
+    #     mkdir -p "$HOME/.cache/whisper" "$HOME/.cache/torch"
 
-    - name: Cache Whisper model files
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/whisper
-          ~/.cache/torch
-        key: ${{ runner.os }}-whisper-models-v1
+    # - name: Cache Whisper model files
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: |
+    #       ~/.cache/whisper
+    #       ~/.cache/torch
+    #     key: ${{ runner.os }}-whisper-models-v1
         
-    - name: Cache apt packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          /var/cache/apt/archives
-          /var/lib/apt/lists
-        key: ${{ runner.os }}-apt-${{ hashFiles('scripts/apt-packages.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-apt-
+    # - name: Cache apt packages
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: |
+    #       /var/cache/apt/archives
+    #       /var/lib/apt/lists
+    #     key: ${{ runner.os }}-apt-${{ hashFiles('scripts/apt-packages.txt') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-apt-
 
     - name: Install apt dependencies (ffmpeg)
       run: |
         sudo apt-get update
         sudo xargs -a scripts/apt-packages.txt apt-get install -y
 
-    - name: Run transcription script
+    - name: Run transcription script (OpenAI API)
       env:
         VERBOSE: "1"
-        WHISPER_VERBOSE: "1"
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
         chmod +x ./scripts/transcribe_flac.sh
-        ./scripts/transcribe_flac.sh
+        ./scripts/transcribe_flac.sh input
 
     - name: Organize files
       run: |

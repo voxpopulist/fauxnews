@@ -6,7 +6,7 @@
 # Example: mcenany-01.flac -> samples/m/mcenany/audio/mcenany-01.flac
 #          mcenany-01.json -> samples/m/mcenany/text/mcenany-01.json
 
-set -euo pipefail
+set -uo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -163,11 +163,12 @@ main() {
 
     # Process each file
     for file in "${files[@]}"; do
-        result=$(organize_file "$file")
-        case $? in
+        organize_file "$file"
+        local status=$?
+        case $status in
             0) ((moved_count++)) ;;
-            1) ((error_count++)) ;;
             2) ((skipped_count++)) ;;
+            *) ((error_count++)) ;;
         esac
     done
     
@@ -176,6 +177,10 @@ main() {
     print_status "Files moved: $moved_count"
     print_status "Files skipped: $skipped_count"
     print_status "Errors: $error_count"
+
+    if [ $error_count -gt 0 ]; then
+        return 1
+    fi
 }
 
 # Help function

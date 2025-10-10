@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Script to transcribe FLAC files using Whisper
-# Usage: ./transcribe_flac.sh
+# Script to transcribe FLAC files using OpenAI's Audio Transcriptions API
+# Usage: ./transcribe_flac.sh [optional_input_dir]
 
 set -u  # Treat unset variables as an error
 
@@ -10,42 +10,81 @@ if [ "$VERBOSE" = "1" ]; then
     set -x
 fi
 
-WHISPER_MODEL=${WHISPER_MODEL:-turbo}
-WHISPER_LANGUAGE=${WHISPER_LANGUAGE:-English}
-WHISPER_VERBOSE=${WHISPER_VERBOSE:-1}
-WHISPER_EXTRA_ARGS=${WHISPER_EXTRA_ARGS:-}
+OPENAI_API_URL=${OPENAI_API_URL:-https://api.openai.com/v1/audio/transcriptions}
+OPENAI_MODEL=${OPENAI_MODEL:-whisper-1}
+OPENAI_API_KEY=${OPENAI_API_KEY:-}
+OPENAI_TIMEOUT=${OPENAI_TIMEOUT:-120}
+RETRY_MAX=${RETRY_MAX:-3}
+RETRY_DELAY=${RETRY_DELAY:-3}
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Get the project root directory (parent of scripts)
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-# Input directory path
-INPUT_DIR="$PROJECT_ROOT/input"
+# Input directory path (allow override via first arg)
+INPUT_DIR="${1:-$PROJECT_ROOT/input}"
+# Optional separate output directory (defaults to INPUT_DIR)
+OUTPUT_DIR="${OUTPUT_DIR:-$INPUT_DIR}"
 
 echo "=== FLAC Transcription Script ==="
-echo "Project root: $PROJECT_ROOT"
-echo "Input directory: $INPUT_DIR"
 
-# Ensure input directory exists so find does not fail on clean checkouts
-if [ ! -d "$INPUT_DIR" ]; then
-    echo "Input directory not found, creating: $INPUT_DIR"
-    mkdir -p "$INPUT_DIR"
-fi
+# Parallel/concurrent transcription support
+CONCURRENCY=${CONCURRENCY:-4}
+MAX_FILES=${MAX_FILES:-0}
 
-# Check if whisper is installed
-if ! command -v whisper &> /dev/null; then
-    echo "Error: whisper command not found. Please install it with:"
-    echo "pip install -U openai-whisper"
-    exit 1
+echo "Using concurrency: $CONCURRENCY"
+
+SUCCESS_COUNT=0
+FAIL_COUNT=0
+TMPDIR=$(mktemp -d)
+SUMMARY_FILE="$TMPDIR/summary.txt"
+touch "$SUMMARY_FILE"
+
+# Function to transcribe a single file (with retries)
+transcribe_one() {
+    flac_file="$1"
+    OUTPUT_DIR="$2"
+    base_name="$(basename "$flac_file" .flac)"
+    out_vtt="$OUTPUT_DIR/${base_name}.vtt"
+    attempt=1
+    while [ $attempt -le $RETRY_MAX ]; do
+        echo "Attempt $attempt/$RETRY_MAX: Transcribing $(basename "$flac_file") via OpenAI → VTT…"
+        if curl -sS --fail --max-time "$OPENAI_TIMEOUT" \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: multipart/form-data" \
+            -F "file=@$flac_file" \
+            -F "model=$OPENAI_MODEL" \
+            -F "response_format=vtt" \
+            "$OPENAI_API_URL" > "$out_vtt.tmp"; then
+            mv "$out_vtt.tmp" "$out_vtt"
+            echo "SUCCESS $flac_file $out_vtt" >> "$SUMMARY_FILE"
+            echo "✓ Successfully transcribed: $(basename "$flac_file") → $(basename "$out_vtt")"
+            return 0
+        else
+            echo "OpenAI API (VTT) failed for $base_name (attempt $attempt)." >&2
+            rm -f "$out_vtt.tmp"
+            ((attempt++))
+            sleep "$RETRY_DELAY"
+        fi
+    done
+    echo "FAIL $flac_file" >> "$SUMMARY_FILE"
+    echo "✗ Failed to transcribe: $(basename "$flac_file") after $RETRY_MAX attempts"
+    return 1
+}
+
+# Limit to MAX_FILES if set
+if [ "$MAX_FILES" -gt 0 ]; then
+    FLAC_FILES=("${FLAC_FILES[@]:0:$MAX_FILES}")
 fi
 
 # Find all FLAC files in the input directory (including subdirectories)
-echo "Searching for FLAC files in: $INPUT_DIR"
-FLAC_FILES=($(find "$INPUT_DIR" -name "*.flac" -type f))
+FLAC_FILES=()
+while IFS= read -r -d $'\0' file; do
+    FLAC_FILES+=("$file")
+done < <(find "$INPUT_DIR" -name "*.flac" -type f -print0)
 
-if [ ${#FLAC_FILES[@]} -eq 0 ]; then
+if [ "${#FLAC_FILES[@]}" -eq 0 ]; then
     echo "No FLAC files found in $INPUT_DIR"
-    exit 0
 fi
 
 echo "Found ${#FLAC_FILES[@]} FLAC file(s) to process:"
@@ -53,48 +92,18 @@ for file in "${FLAC_FILES[@]}"; do
     echo "  - $(basename "$file")"
 done
 
-echo ""
-echo "Starting transcription process..."
+# Export vars/functions for xargs subshells
+export OPENAI_API_URL OPENAI_MODEL OPENAI_API_KEY OPENAI_TIMEOUT RETRY_MAX RETRY_DELAY OUTPUT_DIR SUMMARY_FILE
+export -f transcribe_one
 
-# Process each FLAC file
-SUCCESS_COUNT=0
-FAIL_COUNT=0
+printf "%s\n" "${FLAC_FILES[@]}" | xargs -P "$CONCURRENCY" -n 1 -I {} bash -c 'transcribe_one "$@"' _ {} "$OUTPUT_DIR"
 
-for flac_file in "${FLAC_FILES[@]}"; do
-    echo ""
-    echo "Processing: $(basename "$flac_file")"
-    echo "----------------------------------------"
-    
-    whisper_cmd=(whisper "$flac_file" --model "$WHISPER_MODEL" --language "$WHISPER_LANGUAGE" --output_dir="$INPUT_DIR")
-    if [ "$WHISPER_VERBOSE" = "1" ]; then
-        whisper_cmd+=(--verbose True)
-    else
-        whisper_cmd+=(--verbose False)
-    fi
-    if [ -n "$WHISPER_EXTRA_ARGS" ]; then
-        whisper_cmd+=($WHISPER_EXTRA_ARGS)
-    fi
-
-    echo "Running: ${whisper_cmd[*]}"
-
-    if "${whisper_cmd[@]}"; then
-        echo "✓ Successfully transcribed: $(basename "$flac_file")"
-        ((SUCCESS_COUNT++))
-    else
-        echo "✗ Failed to transcribe: $(basename "$flac_file")"
-        ((FAIL_COUNT++))
-    fi
-done
+# Summarize results
+SUCCESS_COUNT=$(grep -c '^SUCCESS ' "$SUMMARY_FILE" || true)
+FAIL_COUNT=$(grep -c '^FAIL ' "$SUMMARY_FILE" || true)
 
 echo ""
 echo "=== Transcription Summary ==="
 echo "Successfully processed: $SUCCESS_COUNT files"
 echo "Failed to process: $FAIL_COUNT files"
 echo "Total files: ${#FLAC_FILES[@]}"
-
-if [ $FAIL_COUNT -eq 0 ]; then
-    echo "All files processed successfully!"
-else
-    echo "Some files failed to process. Check the output above for details."
-    exit 1
-fi
