@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or "Clipservatives" }}</title>
+  <link rel="stylesheet" href="{{ "/styles.css" | url }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1><a href="{{ "/" | url }}">Clipservatives</a></h1>
+      <p class="tagline">Daily transcripts and audio highlights from conservative media personalities.</p>
+    </div>
+  </header>
+
+  <main class="site-main wrap">
+    {{ content | safe }}
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Built from automated transcripts. Audio previews are low bitrate for quick listening; download FLAC for archival quality.</p>
+    </div>
+  </footer>
+</body>
+</html>

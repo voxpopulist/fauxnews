@@ -1,0 +1,17 @@
+{
+  "name": "clipservatives-site",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync:audio": "node scripts/sync-audio.mjs",
+    "predev": "npm run sync:audio",
+    "dev": "npx @11ty/eleventy --serve --port=4321",
+    "prebuild": "npm run sync:audio",
+    "build": "npx @11ty/eleventy",
+    "clean": "rm -rf _site"
+  },
+  "dependencies": {
+    "@11ty/eleventy": "^3.0.0"
+  }
+}

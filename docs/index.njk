@@ -1,0 +1,88 @@
+---
+layout: layouts/base.njk
+title: Clipservatives
+---
+<section class="intro">
+  <p>Browse recently captured clips. Use the embedded audio previews to listen quickly, read the accompanying transcript, and download the full-resolution FLAC if you need the source.</p>
+  <label class="search">
+    <span class="search__label">Search transcripts</span>
+    <input id="search" class="search__input" type="search" placeholder="Type to filter by any spoken word…" autocomplete="off">
+  </label>
+</section>
+
+<section class="grid">
+{% for sample in samples %}
+  <article class="card" data-transcript="{{ sample.transcriptText | escape }}">
+    <header class="card__header">
+      <h2 class="card__speaker">{{ sample.speaker }}</h2>
+      <p class="card__filename">{{ sample.filename }}</p>
+    </header>
+
+  <audio class="card__player" controls preload="metadata">
+      <source src="{{ sample.mp3Src | url }}" type="audio/mpeg">
+      Your browser does not support the audio element.
+    </audio>
+
+    <div class="card__actions">
+      <a class="card__download" href="{{ sample.flacSrc | url }}">Download FLAC</a>
+    </div>
+
+    <p class="card__preview">{{ sample.preview }}</p>
+
+    <details class="card__transcript">
+      <summary>Transcript</summary>
+      {% if sample.transcript.length %}
+        <ul>
+        {% for segment in sample.transcript %}
+          <li>
+            <span class="timestamp">{{ segment.timestamp }}</span>
+            <span class="text">{{ segment.text }}</span>
+          </li>
+        {% endfor %}
+        </ul>
+      {% else %}
+        <p>No transcript available.</p>
+      {% endif %}
+    </details>
+  </article>
+{% else %}
+  <p class="empty">No samples available yet. Trigger the transcription workflow to populate this page.</p>
+{% endfor %}
+</section>
+
+<script>
+  const searchInput = document.querySelector('#search');
+  const cards = Array.from(document.querySelectorAll('.card'));
+  const audioPlayers = Array.from(document.querySelectorAll('.card__player'));
+
+  function normalize(text) {
+    return text.toLowerCase();
+  }
+
+  function filterCards() {
+    const query = normalize(searchInput.value.trim());
+    if (!query) {
+      cards.forEach((card) => {
+        card.style.display = '';
+      });
+      return;
+    }
+
+    cards.forEach((card) => {
+      const transcript = normalize(card.dataset.transcript || '');
+      card.style.display = transcript.includes(query) ? '' : 'none';
+    });
+  }
+
+  searchInput?.addEventListener('input', filterCards);
+
+  audioPlayers.forEach((player) => {
+    player.addEventListener('play', () => {
+      audioPlayers.forEach((other) => {
+        if (other !== player && !other.paused) {
+          other.pause();
+        }
+      });
+    });
+  });
+</script>
