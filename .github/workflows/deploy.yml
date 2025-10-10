@@ -93,7 +93,7 @@ jobs:
 
     - name: Run transcription script (OpenAI API)
       env:
-        VERBOSE: "1"
+        VERBOSE: "0"
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
         chmod +x ./scripts/transcribe_flac.sh
@@ -105,6 +105,8 @@ jobs:
         ./scripts/organize_files.sh input
 
     - name: Convert FLAC to MP3 for web playback
+      env:
+        FFMPEG_LOGLEVEL: "error"
       run: |
         chmod +x ./scripts/convert_to_mp3.sh
         ./scripts/convert_to_mp3.sh
@@ -137,7 +139,7 @@ jobs:
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "Add transcribed text files from workflow run"
+          git commit -m "---"
           git push
         fi
 

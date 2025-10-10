@@ -10,14 +10,14 @@ title: Clipservatives
   </label>
 </section>
 
-{% if tagCloud.length %}
+{% if samples.tagCloud.length %}
 <section class="tags">
   <div class="tags__header">
     <h2 class="tags__title">Trending words</h2>
     <p class="tags__hint">Click a word to filter clips by that term.</p>
   </div>
   <div class="tags__cloud">
-  {% for tag in tagCloud %}
+  {% for tag in samples.tagCloud %}
     <button class="tags__item" data-word="{{ tag.word }}" data-count="{{ tag.count }}" style="--tag-weight: {{ tag.weight }}">
       <span class="tags__word">{{ tag.word }}</span>
       <span class="tags__count">{{ tag.count }}</span>
@@ -28,15 +28,14 @@ title: Clipservatives
 {% endif %}
 
 <section class="grid">
-{% for sample in samples %}
+{% for sample in samples.samples %}
   <article class="card" data-transcript="{{ sample.transcriptText | escape }}">
     <header class="card__header">
       <h2 class="card__speaker">{{ sample.speaker }}</h2>
       <p class="card__filename">{{ sample.filename }}</p>
     </header>
 
-  <audio class="card__player" controls preload="metadata">
-      <source src="{{ sample.mp3Src | url }}" type="audio/mpeg">
+  <audio class="card__player" controls preload="none" data-src="{{ sample.mp3Src | url }}">
       Your browser does not support the audio element.
     </audio>
 
@@ -73,6 +72,61 @@ title: Clipservatives
   const audioPlayers = Array.from(document.querySelectorAll('.card__player'));
   const tagButtons = Array.from(document.querySelectorAll('.tags__item'));
 
+  // Lazy-load audio sources to prevent Safari crashes from mass metadata fetches
+  const MAX_ACTIVE_LOADS = 3; // limit concurrent metadata loads
+  let activeLoads = 0;
+  const pending = [];
+
+  function activateAudio(el) {
+    if (!el || el.dataset.loaded === '1') return;
+    const src = el.dataset.src;
+    if (!src) return;
+    const doLoad = () => {
+      activeLoads++;
+      el.src = src;
+      el.addEventListener('loadedmetadata', () => {
+        el.dataset.loaded = '1';
+        activeLoads = Math.max(0, activeLoads - 1);
+        pumpQueue();
+      }, { once: true });
+      el.addEventListener('error', () => {
+        activeLoads = Math.max(0, activeLoads - 1);
+        pumpQueue();
+      }, { once: true });
+      try { el.load(); } catch {}
+    };
+    if (activeLoads < MAX_ACTIVE_LOADS) {
+      doLoad();
+    } else {
+      pending.push(doLoad);
+    }
+  }
+
+  function pumpQueue() {
+    while (activeLoads < MAX_ACTIVE_LOADS && pending.length) {
+      const fn = pending.shift();
+      if (fn) fn();
+    }
+  }
+
+  // IntersectionObserver to activate audio when cards enter viewport
+  const supportsIO = 'IntersectionObserver' in window;
+  if (supportsIO) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const audio = entry.target.querySelector('.card__player');
+          if (audio) activateAudio(audio);
+          io.unobserve(entry.target);
+        }
+      });
+    }, { root: null, rootMargin: '200px', threshold: 0.1 });
+    cards.forEach((card) => io.observe(card));
+  } else {
+    // Fallback: activate first few audios
+    audioPlayers.slice(0, 2).forEach(activateAudio);
+  }
+
   function normalize(text) {
     return text.toLowerCase();
   }
@@ -96,6 +150,8 @@ title: Clipservatives
 
   audioPlayers.forEach((player) => {
     player.addEventListener('play', () => {
+      // Ensure source is loaded on user interaction
+      if (player.dataset.loaded !== '1') activateAudio(player);
       audioPlayers.forEach((other) => {
         if (other !== player && !other.paused) {
           other.pause();
