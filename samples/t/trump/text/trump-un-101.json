@@ -1,0 +1,1 @@
+{"text": " more prosperous world.", "segments": [{"id": 0, "seek": 0, "start": 0.0, "end": 1.1400000000000001, "text": " more prosperous world.", "tokens": [50365, 544, 38928, 1002, 13, 50422], "temperature": 0.0, "avg_logprob": -0.5481886523110526, "compression_ratio": 0.7333333333333333, "no_speech_prob": 1.8518440253467716e-11}], "language": "English"}

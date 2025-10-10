@@ -1,0 +1,1 @@
+{"text": " That is so powerful.", "segments": [{"id": 0, "seek": 0, "start": 0.0, "end": 1.0, "text": " That is so powerful.", "tokens": [50365, 663, 307, 370, 4005, 13, 50415], "temperature": 0.0, "avg_logprob": -0.5237189531326294, "compression_ratio": 0.7142857142857143, "no_speech_prob": 6.558198428763262e-11}], "language": "English"}

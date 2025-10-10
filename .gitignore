@@ -1,3 +1,13 @@
+# Ignore MP3 files - they are generated only for the website
+samples/**/*.mp3
+
+# Node modules
+node_modules/
+
+# Build outputs
+docs/_site/
+docs/public/samples/
+
 # Temporary files
 *~
 .DS_Store

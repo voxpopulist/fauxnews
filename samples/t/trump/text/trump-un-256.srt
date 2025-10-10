@@ -1,0 +1,8 @@
+1
+00:00:00,000 --> 00:00:02,060
+Your country is going to fail.
+
+2
+00:00:02,060 --> 00:00:03,140
+And if you don't stop
+

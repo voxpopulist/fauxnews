@@ -1,0 +1,16 @@
+1
+00:00:00,000 --> 00:00:02,240
+getting stuck in the escalator.
+
+2
+00:00:02,240 --> 00:00:04,680
+They still haven't finished the job.
+
+3
+00:00:04,680 --> 00:00:05,800
+They still haven't finished.
+
+4
+00:00:05,800 --> 00:00:06,680
+That was years ago.
+

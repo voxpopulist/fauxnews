@@ -1,0 +1,1 @@
+{"text": " Thank you very much.", "segments": [{"id": 0, "seek": 0, "start": 0.0, "end": 0.76, "text": " Thank you very much.", "tokens": [50365, 1044, 291, 588, 709, 13, 50403], "temperature": 0.0, "avg_logprob": -0.24345853924751282, "compression_ratio": 0.7142857142857143, "no_speech_prob": 3.468537609907507e-11}], "language": "English"}

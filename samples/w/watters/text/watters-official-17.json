@@ -1,0 +1,1 @@
+{"text": " That's interesting.", "segments": [{"id": 0, "seek": 0, "start": 0.0, "end": 0.84, "text": " That's interesting.", "tokens": [50365, 663, 311, 1880, 13, 50407], "temperature": 0.0, "avg_logprob": -0.3375704288482666, "compression_ratio": 0.7037037037037037, "no_speech_prob": 4.233285271805498e-13}], "language": "English"}

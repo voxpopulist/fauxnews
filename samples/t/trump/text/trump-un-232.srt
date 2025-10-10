@@ -1,0 +1,4 @@
+1
+00:00:00,000 --> 00:00:03,120
+And they have to be rebuilt all the time, and they start to rust and rot.
+

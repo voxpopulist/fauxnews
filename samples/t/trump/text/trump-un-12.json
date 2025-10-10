@@ -1,0 +1,1 @@
+{"text": " Hello, Madam First Lady.", "segments": [{"id": 0, "seek": 0, "start": 0.0, "end": 2.0, "text": " Hello, Madam First Lady.", "tokens": [50365, 2425, 11, 18490, 2386, 11256, 13, 50465], "temperature": 0.0, "avg_logprob": -0.5642429457770454, "compression_ratio": 0.75, "no_speech_prob": 2.0952514723227011e-10}], "language": "English"}

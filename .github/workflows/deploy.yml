@@ -4,13 +4,13 @@ on:
   push:
     branches: [ main ]
     paths: 
-      - '**/*.aiff'
-      - '**/*.flac'
+      - 'input/**/*.aiff'
+      - 'input/**/*.flac'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write  # Changed from read to write to allow pushing
   pages: write
   id-token: write
 
@@ -23,15 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout with submodules (SSH)
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive
-        ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-
-    - name: Verify audio layout
-      run: bash scripts/verify_audio_layout.sh
-        
+        token: ${{ secrets.ACTIONS_TOKEN }}
+        fetch-depth: 0  # Fetch full history for proper git operations
+      
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
@@ -79,76 +76,65 @@ jobs:
           ~/.cache/torch
         key: ${{ runner.os }}-whisper-models-v1
         
-    - name: Download transcriber binary (pinned tag)
-      if: ${{ vars.TRANSCRIBE_TAG != '' }}
-      uses: robinraju/release-downloader@v1.11
-      with:
-        repository: voxpopulist/clipservatives-transcriber
-        tag: ${{ vars.TRANSCRIBE_TAG }}
-        fileName: transcribe-linux-amd64
-        out-file-path: bin
-        token: ${{ secrets.TRANSCRIBER_RELEASE_TOKEN }}
-
-    - name: Download transcriber binary (latest)
-      if: ${{ vars.TRANSCRIBE_TAG == '' }}
-      uses: robinraju/release-downloader@v1.11
-      with:
-        repository: voxpopulist/clipservatives-transcriber
-        latest: true
-        fileName: transcribe-linux-amd64
-        out-file-path: bin
-        token: ${{ secrets.TRANSCRIBER_RELEASE_TOKEN }}
-
-    - name: Verify downloaded binary
-      run: |
-        ls -la bin || true
-        test -f bin/transcribe-linux-amd64
-
     - name: Install ffmpeg (for MP3 conversion)
       run: |
         sudo apt-get update
         sudo apt-get install -y ffmpeg
 
-    - name: Verify database presence
+    - name: Run transcription script
       run: |
-        if [ -f transcriber/transcripts.db ]; then
-          echo "✅ Found database at transcriber/transcripts.db"
+        chmod +x ./scripts/transcribe_flac.sh
+        ./scripts/transcribe_flac.sh
+
+    - name: Organize files
+      run: |
+        chmod +x ./scripts/organize_files.sh
+        ./scripts/organize_files.sh input
+
+    - name: Convert FLAC to MP3 for web playback
+      run: |
+        chmod +x ./scripts/convert_to_mp3.sh
+        ./scripts/convert_to_mp3.sh
+
+    - name: Setup Node.js for site build
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'docs/package-lock.json'
+
+    - name: Install site dependencies
+      run: |
+        cd docs
+        npm install
+
+    - name: Build static site
+      run: |
+        cd docs
+        npm run build
+
+    - name: Add text files to git and commit changes (excluding MP3s)
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        # Add only text files, not MP3s
+        find samples -name "*.txt" -o -name "*.vtt" -o -name "*.srt" -o -name "*.json" -o -name "*.tsv" | xargs git add
+        # Also add any new FLAC files that were moved
+        find samples -name "*.flac" | xargs git add
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
         else
-          echo "⚠️ Database not found at transcriber/transcripts.db (will process fresh)"
+          git commit -m "Add transcribed text files from workflow run"
+          git push
         fi
 
-    - name: Convert audio to MP3 (mirrored into docs/)
-      run: |
-        chmod +x bin/transcribe-linux-amd64
-        bin/transcribe-linux-amd64 \
-          --convert-mp3 \
-          --directory samples
-
-    - name: Dry run (preview NEW vs SKIP)
-      run: |
-        chmod +x bin/transcribe-linux-amd64
-        bin/transcribe-linux-amd64 \
-          --directory samples \
-          --model turbo \
-          --database transcriber/transcripts.db \
-          --dry-run
-
-    - name: Generate transcripts
-      run: |
-        bin/transcribe-linux-amd64 \
-          --directory samples \
-          --model turbo \
-          --database transcriber/transcripts.db \
-          --output docs/index.html \
-          --github-pages-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-        
     - name: Setup Pages
       uses: actions/configure-pages@v4
       
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: ./docs
+        path: ./docs/_site
         
   deploy:
     environment:
