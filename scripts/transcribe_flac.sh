@@ -16,10 +16,10 @@ echo "=== FLAC Transcription Script ==="
 echo "Project root: $PROJECT_ROOT"
 echo "Input directory: $INPUT_DIR"
 
-# Check if input directory exists
+# Ensure input directory exists so find does not fail on clean checkouts
 if [ ! -d "$INPUT_DIR" ]; then
-    echo "Error: Input directory does not exist: $INPUT_DIR"
-    exit 1
+    echo "Input directory not found, creating: $INPUT_DIR"
+    mkdir -p "$INPUT_DIR"
 fi
 
 # Check if whisper is installed

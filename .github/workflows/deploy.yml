@@ -76,10 +76,20 @@ jobs:
           ~/.cache/torch
         key: ${{ runner.os }}-whisper-models-v1
         
-    - name: Install ffmpeg (for MP3 conversion)
+    - name: Cache apt packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          /var/cache/apt/archives
+          /var/lib/apt/lists
+        key: ${{ runner.os }}-apt-${{ hashFiles('scripts/apt-packages.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-
+
+    - name: Install apt dependencies (ffmpeg)
       run: |
         sudo apt-get update
-        sudo apt-get install -y ffmpeg
+        sudo xargs -a scripts/apt-packages.txt apt-get install -y
 
     - name: Run transcription script
       run: |
@@ -132,7 +142,7 @@ jobs:
       uses: actions/configure-pages@v4
       
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v4
       with:
         path: ./docs/_site
         

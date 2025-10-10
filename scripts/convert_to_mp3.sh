@@ -3,7 +3,7 @@
 # Script to convert FLAC files to MP3 for web playback
 # This should be run after the organize_files.sh script
 
-set -euo pipefail
+set -uo pipefail
 
 # Colors for output
 RED='\033[0;31m'
