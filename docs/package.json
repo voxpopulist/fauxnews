@@ -7,8 +7,8 @@
     "sync:audio": "node scripts/sync-audio.mjs",
     "predev": "npm run sync:audio",
     "dev": "npx @11ty/eleventy --serve --port=4321",
-    "prebuild": "npm run sync:audio",
-    "build": "npx @11ty/eleventy",
+  "prebuild": "npm run sync:audio && node scripts/build-index.mjs",
+  "build": "npx @11ty/eleventy",
     "clean": "rm -rf _site"
   },
   "dependencies": {

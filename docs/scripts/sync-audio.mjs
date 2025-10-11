@@ -35,7 +35,7 @@ async function copyMp3s() {
 
   await ensureDir(publicRoot);
 
-  const allowedExtensions = new Set([".mp3", ".flac"]);
+  const allowedExtensions = new Set([".mp3", ".flac", ".vtt", ".txt"]);
 
   for await (const file of walk(samplesRoot)) {
     const ext = path.extname(file).toLowerCase();

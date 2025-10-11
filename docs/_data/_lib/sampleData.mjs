@@ -108,11 +108,15 @@ export function loadSampleData() {
 
       let transcript = [];
       let transcriptFlattened = "";
+      let transcriptPath = null;
+      let transcriptType = null;
       if (fs.existsSync(vttFile)) {
         try {
           const vttContent = fs.readFileSync(vttFile, "utf-8");
           transcript = parseVtt(vttContent);
           transcriptFlattened = transcript.map((segment) => segment.text).join(" ");
+          transcriptPath = path.join("/samples", path.relative(samplesRoot, vttFile)).replace(/\\/g, "/");
+          transcriptType = "vtt";
         } catch {}
       } else if (fs.existsSync(txtFile)) {
         try {
@@ -120,6 +124,8 @@ export function loadSampleData() {
           if (txtContent.trim()) {
             transcript = [{ timestamp: "00:00.000", text: txtContent.trim() }];
             transcriptFlattened = txtContent.trim();
+            transcriptPath = path.join("/samples", path.relative(samplesRoot, txtFile)).replace(/\\/g, "/");
+            transcriptType = "txt";
           }
         } catch {}
       }
@@ -139,16 +145,24 @@ export function loadSampleData() {
   // Use same-origin path for FLAC to avoid iOS Safari CORS/permission issues
   const flacDownload = `/samples/${speakerPath}/audio/${entry.name}`;
 
+      // Build a short search excerpt to keep DOM light; full text not embedded in page
+      const searchExcerpt = transcriptFlattened ? transcriptFlattened.slice(0, 600) : "";
+
       samples.push({
         filename: entry.name,
         speaker,
+        key: `${speakerPath}/audio/${entry.name}`,
         flacSrc: flacDownload,
         mp3Src: `/samples/${speakerPath}/audio/${baseName}.mp3`,
-        transcript,
+        transcriptAvailable: Boolean(transcriptPath),
+        transcriptSrc: transcriptPath,
+        transcriptType,
+        // Keep transcriptText server-side for tag cloud computation, but avoid embedding in DOM
         transcriptText: transcriptFlattened,
         preview: transcriptFlattened
           ? transcriptFlattened.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ")
-          : "Transcript not available."
+          : "Transcript not available.",
+        searchExcerpt
       });
     }
   }
