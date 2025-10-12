@@ -17,7 +17,32 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const searchInput = $('#search');
 const resultsEl = $('#results');
 const countEl = $('#resultsCount');
-const tagButtons = $$('.tags__item');
+// Tag buttons in the tag cloud (robust selector)
+const tagButtons = $$('[data-word]');
+let activeTagEl = null;
+
+function setActiveTagEl(el) {
+  // Clear previous active
+  if (activeTagEl) {
+    activeTagEl.classList.remove('ring-2','ring-primary-400','bg-primary-400/10');
+    activeTagEl.setAttribute('aria-pressed', 'false');
+    const prevOverlay = activeTagEl.querySelector('.absolute.inset-0');
+    if (prevOverlay) {
+      prevOverlay.classList.remove('opacity-100');
+      prevOverlay.classList.add('opacity-0');
+    }
+  }
+  activeTagEl = el || null;
+  if (activeTagEl) {
+    activeTagEl.classList.add('ring-2','ring-primary-400','bg-primary-400/10');
+    activeTagEl.setAttribute('aria-pressed', 'true');
+    const overlay = activeTagEl.querySelector('.absolute.inset-0');
+    if (overlay) {
+      overlay.classList.remove('opacity-0');
+      overlay.classList.add('opacity-100');
+    }
+  }
+}
 
 // Create infinite scroll sentinel
 const scrollSentinel = document.createElement('div');
@@ -177,17 +202,37 @@ searchInput?.addEventListener('input', () => {
   // Set new timeout for debounced search
   state.searchTimeout = setTimeout(() => {
     runSearch();
+    // Clear highlight if query doesn't match active tag
+    const q = (searchInput?.value || '').trim();
+    if (activeTagEl) {
+      const currentTag = activeTagEl?.dataset?.word || '';
+      if (!q || q.toLowerCase() !== currentTag.toLowerCase()) {
+        setActiveTagEl(null);
+      }
+    }
   }, 300); // 300ms delay
 });
+function activateTag(word, sourceEl) {
+  if (!word || !searchInput) return;
+  searchInput.value = word;
+  runSearch();
+  searchInput.focus({ preventScroll: true });
+  // Scroll to results after tag search
+  setTimeout(scrollToResults, 150);
+  if (sourceEl) setActiveTagEl(sourceEl);
+}
+
 tagButtons.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const word = btn.dataset.word || '';
-    if (!word || !searchInput) return;
-    searchInput.value = word;
-    runSearch();
-    searchInput.focus({ preventScroll: true });
-    // Scroll to results after tag search
-    setTimeout(scrollToResults, 150);
+  btn.addEventListener('click', (e) => {
+    const target = e.currentTarget;
+    activateTag(target?.dataset?.word || '', target);
+  });
+  // Keyboard accessibility: Enter/Space
+  btn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      activateTag(e.currentTarget?.dataset?.word || '', e.currentTarget);
+    }
   });
 });
 

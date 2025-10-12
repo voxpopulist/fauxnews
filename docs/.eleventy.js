@@ -20,7 +20,7 @@ export default function(eleventyConfig) {
       data: "_data",
       output: "_site"
     },
-    pathPrefix: "/clipservatives/",
+  pathPrefix: "/fauxnews/",
     htmlTemplateEngine: "njk",
     dataTemplateEngine: "njk",
     markdownTemplateEngine: "njk"

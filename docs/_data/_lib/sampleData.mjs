@@ -86,10 +86,21 @@ export function loadSampleData() {
       const vttFile = path.join(textDir, `${baseName}.vtt`);
       const mp3File = path.join(audioDir, `${baseName}.mp3`);
 
-      if (!fs.existsSync(mp3File)) {
-        continue;
+      // Determine speaker path early so we can build audio URLs
+      const speakerPathSegments = [...segments];
+      if (speakerPathSegments[speakerPathSegments.length - 1] === "audio") {
+        speakerPathSegments.pop();
       }
+      const speakerPath = speakerPathSegments.join("/");
+      const rawSpeaker = speakerPathSegments[speakerPathSegments.length - 1] || "Unknown";
+      const speaker = rawSpeaker.charAt(0).toUpperCase() + rawSpeaker.slice(1);
 
+      // For development: Allow samples even if MP3 doesn't exist yet, but prefer MP3 if available
+      const hasMP3 = fs.existsSync(mp3File);
+      const audioSrc = hasMP3
+        ? `/samples/${speakerPath}/audio/${baseName}.mp3`
+        : `/samples/${speakerPath}/audio/${entry.name}`;
+      
       let transcript = [];
       let transcriptFlattened = "";
       let transcriptPath = null;
@@ -118,14 +129,6 @@ export function loadSampleData() {
         transcriptFlattened = transcript.map((segment) => segment.text).join(" ");
       }
 
-      const speakerPathSegments = [...segments];
-      if (speakerPathSegments[speakerPathSegments.length - 1] === "audio") {
-        speakerPathSegments.pop();
-      }
-      const speakerPath = speakerPathSegments.join("/");
-      const rawSpeaker = speakerPathSegments[speakerPathSegments.length - 1] || "Unknown";
-      const speaker = rawSpeaker.charAt(0).toUpperCase() + rawSpeaker.slice(1);
-
   // Use same-origin path for FLAC to avoid iOS Safari CORS/permission issues
   const flacDownload = `/samples/${speakerPath}/audio/${entry.name}`;
 
@@ -137,7 +140,7 @@ export function loadSampleData() {
         speaker,
         key: `${speakerPath}/audio/${entry.name}`,
         flacSrc: flacDownload,
-        mp3Src: `/samples/${speakerPath}/audio/${baseName}.mp3`,
+        mp3Src: audioSrc,
         transcriptAvailable: Boolean(transcriptPath),
         transcriptSrc: transcriptPath,
         transcriptType,

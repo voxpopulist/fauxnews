@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ title or "Clipservatives" }}</title>
+    <title>{{ title or "Faux News" }}</title>
       <link rel="stylesheet" href="{{ '/styles.css' | url }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,7 +27,7 @@
                         <div>
                             <h1 class="text-xl font-bold text-dark-50">
                                 <a href="{{ '/' | url }}" class="hover:text-primary-300 transition-colors duration-200">
-                                    Clipservatives
+                                    Faux News
                                 </a>
                             </h1>
                             <p class="text-sm text-dark-100 hidden sm:block">Political audio clips & transcripts</p>
@@ -46,16 +46,16 @@
         <footer class="relative z-10 bg-dark-600/50 backdrop-blur-xl border-t border-dark-200/20 mt-24">
             <div class="max-w-7xl mx-auto px-6 py-8">
                 <div class="text-center text-dark-100">
-                    <p class="text-sm">&copy; 2024 Clipservatives. Audio content belongs to respective media organizations.</p>
+                    <p class="text-sm">&copy; 2024 Faux News. Audio content belongs to respective media organizations.</p>
                 </div>
             </div>
         </footer>
     </div>
     
-    <script>
-      window.PATH_PREFIX = "/clipservatives/";
-      window.INDEX_URL = "{{ '/index/index.json' | url }}";
-    </script>
+        <script>
+            window.PATH_PREFIX = "{{ '' | url }}";
+            window.INDEX_URL = "{{ '/index/index.json' | url }}";
+        </script>
     <script type="module" src="{{ '/src/main.js' | url }}"></script>
 </body>
 </html>

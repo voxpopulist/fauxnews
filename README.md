@@ -1,34 +1,40 @@
-# Clipservatives Audio Archive
+# Faux News Audio Samples
 
 
 
 This repository contains a large collection of far-right commentary/bullshit audio samples that are automatically transcribed and presented in a searchable index. The goal is to provide an archive samples for musicians everywhere but with an index of what was said.
 
-![alt text](clipservative-clean.jpg)
+<img src="fauxnews.jpg" alt="Fox Eating a Newspaper" height="200">
 
 ## 📁 Structure
 
 ```
-clipservatives/
-├── docs/
-│   └── index.html          # Generated transcript index (GitHub Pages)
-├── samples/                # Audio files organized for browsing
-│   ├── m/                  # Top-level folder is first letter
-│   │   ├── mcenany/        # Then first word (show/speaker/subject)
-│   │   │   └── mcenany-01.aiff
-│   │   └── miller/
-│   │       └── miller-01.aiff
+.
+├── docs/                      # Site source (Eleventy)
+│   ├── _includes/             # Nunjucks layouts/partials
+│   ├── public/                # Built CSS/JS assets
+│   ├── _site/                 # Generated static site (build output)
+│   ├── src/                   # Frontend source (JS, CSS)
+│   ├── index.njk              # Home page template
+│   └── package.json           # Site deps/scripts
+├── samples/                   # Audio corpus (organized A–Z / speaker / audio|text)
+│   ├── b/
+│   │   └── bondi/
+│   │       ├── audio/         # .flac (source) and .mp3 (web) files
+│   │       │   └── bondi-epstein-01.{flac,mp3}
+│   │       └── text/          # .vtt/.txt transcripts
+│   │           └── bondi-epstein-01.{vtt,txt}
 │   └── w/
 │       └── watters/
-│           └── watters-01.aiff
-└── README.md              # This file
+│           ├── audio/
+│           └── text/
+├── scripts/                   # Ingestion/build scripts (ffmpeg, organize, etc.)
+├── .github/workflows/         # CI to build & deploy Pages
+└── README.md                  # This file
 ```
 
-## 🌐 View Transcripts
-
-The transcripts are automatically generated and deployed to GitHub Pages:
-
-**[View Live Transcripts →](https://voxpopulist.github.io/clipservatives)**
+<img src="screenshot-1.png" alt="Screenshot 1" height="300">
+<img src="screenshot-2.png" alt="Screenshot 3" height="300">
 
 ## 📝 About
 
@@ -49,5 +55,5 @@ Audio files are organized under `samples/` into letter → name subfolders (e.g.
 
 ## 🔗 Links
 
-- [Live Transcript Index](https://voxpopulist.github.io/clipservatives)
+- [The Website](https://voxpopulist.github.io/fauxnews)
 - [Raw Audio Files](./docs)
