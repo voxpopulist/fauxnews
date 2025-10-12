@@ -1,4 +1,4 @@
-name: Generate and Deploy Transcripts
+name: Process Audio and Deploy Site
 
 on:
   push:
@@ -8,6 +8,11 @@ on:
       - 'input/**/*.flac'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual audio processing'
+        required: false
+        default: 'Manual audio processing and deployment'
 
 permissions:
   contents: write  # Changed from read to write to allow pushing
@@ -15,7 +20,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "pages-audio-processing"
   cancel-in-progress: false
 
 jobs:

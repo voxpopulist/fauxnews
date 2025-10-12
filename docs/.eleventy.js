@@ -6,7 +6,7 @@ const __dirname = path.dirname(__filename);
 
 export default function(eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "public": "." });
-  eleventyConfig.addPassthroughCopy({ "styles.css": "styles.css" });
+  // Remove old styles.css passthrough since we're using Tailwind now
 
   eleventyConfig.setServerOptions({
     port: 4321,
@@ -20,7 +20,7 @@ export default function(eleventyConfig) {
       data: "_data",
       output: "_site"
     },
-    pathPrefix: "clipservatives",
+    pathPrefix: "/clipservatives/",
     htmlTemplateEngine: "njk",
     dataTemplateEngine: "njk",
     markdownTemplateEngine: "njk"

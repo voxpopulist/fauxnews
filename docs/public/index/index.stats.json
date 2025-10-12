@@ -1,9 +1,9 @@
 {
-  "docs": 459,
-  "terms": 3367,
+  "docs": 578,
+  "terms": 5314,
   "sizes": {
-    "raw": 246597,
-    "gzip": 61134,
-    "brotli": 47529
+    "raw": 351965,
+    "gzip": 89346,
+    "brotli": 71258
   }
 }

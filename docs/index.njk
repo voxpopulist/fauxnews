@@ -2,383 +2,81 @@
 layout: layouts/base.njk
 title: Clipservatives
 ---
-<section class="intro">
-  <p>Browse recently captured clips. Use the embedded audio previews to listen quickly, read the accompanying transcript, and download the full-resolution FLAC if you need the source.</p>
-  <label class="search">
-    <span class="search__label">Search transcripts</span>
-    <input id="search" class="search__input" type="search" placeholder="Type to filter by any spoken word…" autocomplete="off">
-  </label>
-</section>
 
-{% if samples.tagCloud.length %}
-<section class="tags">
-  <div class="tags__header">
-    <h2 class="tags__title">Trending words</h2>
-    <p class="tags__hint">Click a word to filter clips by that term.</p>
+<!-- Hero Section -->
+<div class="relative overflow-hidden bg-gradient-to-br from-dark-600 via-dark-500 to-dark-400 rounded-2xl p-8 mb-12">
+  <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23334155" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="1.5"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
+  <div class="relative">
+    <h1 class="text-3xl md:text-4xl font-bold text-dark-50 mb-4">
+      Browse Political Audio Clips
+    </h1>
+    <p class="text-lg text-dark-100 leading-relaxed max-w-3xl">
+      Discover recently captured clips from conservative media personalities. Listen to embedded audio previews, read accompanying transcripts, and download high-quality FLAC files.
+    </p>
   </div>
-  <div class="tags__cloud">
-  {% for tag in samples.tagCloud %}
-    <button class="tags__item" data-word="{{ tag.word }}" data-count="{{ tag.count }}" style="--tag-weight: {{ tag.weight }}">
-      <span class="tags__word">{{ tag.word }}</span>
-      <span class="tags__count">{{ tag.count }}</span>
-    </button>
-  {% endfor %}
+</div>
+
+<!-- Tag Cloud Section -->
+{% if samples.tagCloud.length %}
+<section class="mb-12">
+  <div class="text-center mb-8">
+    <h2 class="text-2xl font-bold text-dark-50 mb-2">Trending Words</h2>
+    <p class="text-dark-100">Click any word to filter clips by that term</p>
+  </div>
+  <div class="bg-dark-400/30 backdrop-blur-sm rounded-2xl p-6 border border-dark-200/20">
+    <div class="flex flex-wrap justify-center gap-3">
+    {% for tag in samples.tagCloud %}
+      <button class="tag-item group relative overflow-hidden" data-word="{{ tag.word }}" data-count="{{ tag.count }}" style="--tag-weight: {{ tag.weight }}">
+        <span class="relative z-10 font-medium">{{ tag.word }}</span>
+        <span class="relative z-10 ml-2 text-xs bg-primary-400/30 px-2 py-0.5 rounded-full group-hover:bg-primary-400/50 transition-colors duration-200">{{ tag.count }}</span>
+        <div class="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-primary-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      </button>
+    {% endfor %}
+    </div>
   </div>
 </section>
 {% endif %}
 
-<section class="grid" id="results">
-  <p class="loading">Loading clips…</p>
+<!-- Search Section -->
+<section class="sticky top-0 z-40 -mx-6 px-6 py-6 bg-dark-500/95 backdrop-blur-xl border-b border-dark-200/20 mb-8 shadow-lg">
+  <div class="max-w-2xl mx-auto">
+    <label class="block">
+      <span class="block text-sm font-semibold text-dark-100 mb-3">Search Transcripts</span>
+      <div class="relative">
+        <input 
+          id="search" 
+          class="w-full bg-dark-400/60 border-2 border-dark-200/40 rounded-xl px-6 py-4 pr-14 text-lg text-dark-50 placeholder-dark-100 focus:outline-none focus:border-primary-400 focus:bg-dark-400/80 transition-all duration-300 shadow-inner"
+          type="search" 
+          placeholder="Type to search any spoken word..."
+          autocomplete="off"
+        >
+        <div class="absolute right-4 top-1/2 transform -translate-y-1/2 text-dark-100">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+      </div>
+    </label>
+  </div>
 </section>
-<div class="results__controls">
-  <p class="results__count" id="resultsCount"></p>
-  <button id="loadMore" class="results__more" hidden>Load more</button>
+
+<!-- Results Section -->
+<section class="min-h-screen">
+  <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8" id="results">
+    <div class="col-span-full flex flex-col items-center justify-center py-24">
+      <div class="animate-spin w-8 h-8 border-2 border-dark-300 border-t-primary-500 rounded-full mb-4"></div>
+      <p class="text-dark-100 text-lg">Loading clips...</p>
+    </div>
+  </div>
+</section>
+
+<!-- Results Count -->
+<div class="flex justify-center mt-8 pb-12">
+  <p class="text-dark-100 font-medium" id="resultsCount"></p>
 </div>
 
 <script>
-  // Config for path prefix and index URL (GitHub Pages pathPrefix aware)
-  window.PATH_PREFIX = "{{ '' | url }}"; // e.g. "/clipservatives/"
+  window.PATH_PREFIX = "{{ '' | url }}";
   window.INDEX_URL = "{{ '/index/index.json' | url }}";
-
-  const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-
-  const searchInput = $('#search');
-  const resultsEl = $('#results');
-  const countEl = $('#resultsCount');
-  const loadMoreBtn = $('#loadMore');
-  const tagButtons = $$('.tags__item');
-
-  // Audio lazy-load throttling
-  const MAX_ACTIVE_LOADS = 3;
-  let activeLoads = 0;
-  const pendingLoads = [];
-
-  function siteUrl(path) {
-    const base = window.PATH_PREFIX || '/';
-    if (!path) return base;
-    if (path.startsWith('http')) return path;
-    // Ensure base ends with / and path doesn't start with /
-    const cleanBase = base.endsWith('/') ? base : base + '/';
-    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-    return cleanBase + cleanPath;
-  }
-
-  function activateAudio(el) {
-    if (!el || el.dataset.loaded === '1') return;
-    const src = el.dataset.src;
-    if (!src) return;
-    const doLoad = () => {
-      activeLoads++;
-      el.src = src;
-      el.addEventListener('loadedmetadata', () => {
-        el.dataset.loaded = '1';
-        activeLoads = Math.max(0, activeLoads - 1);
-        pumpQueue();
-      }, { once: true });
-      el.addEventListener('error', () => {
-        activeLoads = Math.max(0, activeLoads - 1);
-        pumpQueue();
-      }, { once: true });
-      try { el.load(); } catch {}
-    };
-    if (activeLoads < MAX_ACTIVE_LOADS) doLoad(); else pendingLoads.push(doLoad);
-  }
-  function pumpQueue() {
-    while (activeLoads < MAX_ACTIVE_LOADS && pendingLoads.length) {
-      const fn = pendingLoads.shift();
-      if (fn) fn();
-    }
-  }
-
-  // Observe cards for audio activation
-  const supportsIO = 'IntersectionObserver' in window;
-  const cardObserver = supportsIO ? new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const audio = entry.target.querySelector('.card__player');
-        if (audio) activateAudio(audio);
-        cardObserver.unobserve(entry.target);
-      }
-    });
-  }, { root: null, rootMargin: '200px', threshold: 0.1 }) : null;
-
-  function observeCard(card) {
-    if (cardObserver) cardObserver.observe(card);
-  }
-
-  // One-at-a-time audio playback
-  function wireAudioPlayer(player) {
-    player.addEventListener('play', () => {
-      if (player.dataset.loaded !== '1') activateAudio(player);
-      $$('.card__player').forEach((other) => {
-        if (other !== player && !other.paused) other.pause();
-      });
-    });
-  }
-
-  // Transcript lazy rendering
-  async function fetchText(url) {
-    const res = await fetch(url, { credentials: 'same-origin' });
-    if (!res.ok) throw new Error('Failed to fetch transcript');
-    return await res.text();
-  }
-  function renderTranscriptFromTxt(container, text) {
-    const p = document.createElement('p');
-    p.textContent = text.trim();
-    container.replaceChildren(p);
-  }
-  function renderTranscriptFromVtt(container, vttText) {
-    const lines = vttText.split(/\r?\n/);
-    const ul = document.createElement('ul');
-    let i = 0;
-    while (i < lines.length) {
-      const line = lines[i].trim();
-      if (!line || line.toUpperCase() === 'WEBVTT') { i++; continue; }
-      if (line.includes('-->')) {
-        const m = line.match(/((?:\d{2}:)?\d{2}:\d{2}\.\d{3})\s*-->\s*((?:\d{2}:)?\d{2}:\d{2}\.\d{3})/);
-        let textLines = [];
-        i++;
-        while (i < lines.length) {
-          const t = lines[i].trim();
-          if (!t || t.includes('-->')) break;
-          textLines.push(t);
-          i++;
-        }
-        if (textLines.length) {
-          const li = document.createElement('li');
-          const ts = document.createElement('span');
-          ts.className = 'timestamp';
-          ts.textContent = `${m?.[1] || ''} → ${m?.[2] || ''}`;
-          const tx = document.createElement('span');
-          tx.className = 'text';
-          tx.textContent = textLines.join(' ');
-          li.appendChild(ts);
-          li.appendChild(tx);
-          ul.appendChild(li);
-        }
-        continue;
-      }
-      i++;
-    }
-    if (!ul.children.length) {
-      const p = document.createElement('p');
-      p.textContent = 'No transcript available.';
-      container.replaceChildren(p);
-    } else {
-      container.replaceChildren(ul);
-    }
-  }
-  function wireTranscript(details) {
-    details.addEventListener('toggle', async () => {
-      if (!details.open || details.dataset.loaded === '1') return;
-      const card = details.closest('.card');
-      const src = card?.dataset.transcriptSrc;
-      const type = card?.dataset.transcriptType;
-      const container = details.querySelector('.transcript__placeholder') || details;
-      if (!src) {
-        container.textContent = 'No transcript available.';
-        details.dataset.loaded = '1';
-        return;
-      }
-      try {
-        const text = await fetchText(siteUrl(src));
-        if (type === 'txt') renderTranscriptFromTxt(container, text);
-        else renderTranscriptFromVtt(container, text);
-      } catch {
-        container.textContent = 'Failed to load transcript.';
-      } finally {
-        details.dataset.loaded = '1';
-      }
-    });
-  }
-
-  // Card template
-  function createCard(doc) {
-    const article = document.createElement('article');
-    article.className = 'card';
-    article.dataset.transcriptSrc = doc.transcriptSrc || '';
-    article.dataset.transcriptType = (doc.transcriptSrc && doc.transcriptSrc.endsWith('.txt')) ? 'txt' : 'vtt';
-
-    const header = document.createElement('header');
-    header.className = 'card__header';
-    const h2 = document.createElement('h2');
-    h2.className = 'card__speaker';
-    h2.textContent = doc.speaker;
-    const pfn = document.createElement('p');
-    pfn.className = 'card__filename';
-    pfn.textContent = doc.filename;
-    header.appendChild(h2); header.appendChild(pfn);
-
-    const audio = document.createElement('audio');
-    audio.className = 'card__player';
-    audio.controls = true;
-    audio.setAttribute('preload', 'none');
-    audio.dataset.src = siteUrl(doc.mp3Src);
-
-    const actions = document.createElement('div');
-    actions.className = 'card__actions';
-    const a = document.createElement('a');
-    a.className = 'card__download';
-    a.href = siteUrl(doc.flacSrc);
-    a.textContent = 'Download FLAC';
-    actions.appendChild(a);
-
-    const preview = document.createElement('p');
-    preview.className = 'card__preview';
-    preview.textContent = doc.preview || '';
-
-    const details = document.createElement('details');
-    details.className = 'card__transcript';
-    details.dataset.loaded = '0';
-    const summary = document.createElement('summary');
-    summary.textContent = 'Transcript';
-    details.appendChild(summary);
-    if (doc.transcriptAvailable) {
-      const ph = document.createElement('div');
-      ph.className = 'transcript__placeholder';
-      ph.textContent = 'Loading transcript…';
-      details.appendChild(ph);
-    } else {
-      const nt = document.createElement('p');
-      nt.textContent = 'No transcript available.';
-      details.appendChild(nt);
-    }
-
-    article.appendChild(header);
-    article.appendChild(audio);
-    article.appendChild(actions);
-    article.appendChild(preview);
-    article.appendChild(details);
-
-    // Wire behaviors
-    observeCard(article);
-    wireAudioPlayer(audio);
-    wireTranscript(details);
-
-    return article;
-  }
-
-  // Index loading and search
-  function tokenize(text) {
-    if (!text) return [];
-    const m = text.toLowerCase().match(/[a-z']+/g);
-    if (!m) return [];
-    return m.filter(w => w.length > 2);
-  }
-  function deltaDecode(arr) {
-    let prev = 0; const out = [];
-    for (const d of arr) { prev += d; out.push(prev); }
-    return out;
-  }
-
-  const state = {
-    docs: [],
-    terms: new Map(),
-    filtered: [],
-    offset: 0,
-    pageSize: 40,
-    loaded: false,
-  };
-
-  async function loadIndex() {
-    if (state.loaded) return;
-    const url = window.INDEX_URL;
-    const res = await fetch(url, { credentials: 'same-origin' });
-    const idx = await res.json();
-    state.docs = idx.docs;
-    for (const [term, deltas] of Object.entries(idx.terms || {})) {
-      state.terms.set(term, deltaDecode(deltas));
-    }
-    state.loaded = true;
-  }
-
-  function intersectSorted(a, b) {
-    // Both arrays sorted ascending
-    const out = [];
-    let i = 0, j = 0;
-    while (i < a.length && j < b.length) {
-      if (a[i] === b[j]) { out.push(a[i]); i++; j++; }
-      else if (a[i] < b[j]) i++; else j++;
-    }
-    return out;
-  }
-
-  function searchDocs(query) {
-    const tokens = tokenize(query);
-    if (tokens.length === 0) return state.docs.map(d => d.id);
-    const lists = tokens.map(t => state.terms.get(t) || []);
-    if (lists.some(l => l.length === 0)) return [];
-    // Intersect from smallest list for efficiency
-    lists.sort((a,b) => a.length - b.length);
-    return lists.slice(1).reduce((acc, cur) => intersectSorted(acc, cur), lists[0].slice());
-  }
-
-  function clearResults() { resultsEl.replaceChildren(); }
-
-  function renderMore() {
-    const remaining = state.filtered.length - state.offset;
-    if (remaining <= 0) { loadMoreBtn.hidden = true; return; }
-    const take = Math.min(state.pageSize, remaining);
-    const fragment = document.createDocumentFragment();
-    for (let i = 0; i < take; i++) {
-      const id = state.filtered[state.offset + i];
-      const doc = state.docs[id];
-      fragment.appendChild(createCard(doc));
-    }
-    resultsEl.appendChild(fragment);
-    state.offset += take;
-    loadMoreBtn.hidden = state.offset >= state.filtered.length;
-  }
-
-  function updateCount() {
-    if (!countEl) return;
-    const total = state.filtered.length;
-    countEl.textContent = total ? `${total} result${total===1?'':'s'}` : 'No results';
-  }
-
-  async function runSearch() {
-    if (!state.loaded) await loadIndex();
-    const q = (searchInput?.value || '').trim();
-    state.filtered = searchDocs(q);
-    state.offset = 0;
-    clearResults();
-    if (state.filtered.length === 0) {
-      resultsEl.innerHTML = '<p class="empty">No clips match your search.</p>';
-      loadMoreBtn.hidden = true;
-    } else {
-      renderMore();
-    }
-    updateCount();
-  }
-
-  // Wire UI
-  searchInput?.addEventListener('input', () => { runSearch(); });
-  loadMoreBtn?.addEventListener('click', renderMore);
-  tagButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const word = btn.dataset.word || '';
-      if (!word || !searchInput) return;
-      searchInput.value = word;
-      runSearch();
-      searchInput.focus({ preventScroll: true });
-    });
-  });
-
-  // Initial listing (no query): show first page of all docs
-  (async () => {
-    try {
-      await loadIndex();
-      // default to all docs
-      state.filtered = state.docs.map(d => d.id);
-      state.offset = 0;
-      clearResults();
-      renderMore();
-      updateCount();
-      const loading = resultsEl.querySelector('.loading');
-      if (loading) loading.remove();
-    } catch (e) {
-      resultsEl.innerHTML = '<p class="empty">Failed to load clips.</p>';
-    }
-  })();
 </script>
+<script type="module" src="{{ '/src/main.js' | url }}"></script>

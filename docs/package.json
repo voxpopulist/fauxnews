@@ -6,12 +6,26 @@
   "scripts": {
     "sync:audio": "node scripts/sync-audio.mjs",
     "predev": "npm run sync:audio",
-    "dev": "npx @11ty/eleventy --serve --port=4321",
-  "prebuild": "npm run sync:audio && node scripts/build-index.mjs",
-  "build": "npx @11ty/eleventy",
-    "clean": "rm -rf _site"
+    "dev": "npm run build:css:prod && npx @11ty/eleventy --serve --port=4321",
+    "dev:watch": "npm run build:css & npx @11ty/eleventy --serve --port=4321",
+    "build:js": "esbuild src/main.js --bundle --minify --outdir=public/src --format=esm",
+    "build:css": "npx tailwindcss -i src/styles.css -o public/styles.css --watch",
+    "build:css:prod": "npx tailwindcss -i src/styles.css -o public/styles.css --minify",
+    "prebuild": "npm run sync:audio && node scripts/build-index.mjs && npm run build:js && npm run build:css:prod",
+    "build": "npx @11ty/eleventy",
+    "test": "uvu scripts"
   },
   "dependencies": {
-    "@11ty/eleventy": "^3.0.0"
+    "@11ty/eleventy": "^3.0.0",
+    "@headlessui/tailwindcss": "^0.2.2",
+    "lucide": "^0.545.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "autoprefixer": "^10.4.21",
+    "esbuild": "^0.25.10",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18",
+    "uvu": "^0.5.6"
   }
 }
