@@ -36,7 +36,7 @@
     "geckodriver": "^4.2.1",
     "edgedriver": "^5.4.0",
     "axe-core": "^4.8.2",
-    "lighthouse": "^11.3.0",
+    "lighthouse": "^13.0.0",
     "puppeteer": "^21.5.2",
     "playwright": "^1.40.1",
     "dotenv": "^16.3.1",
