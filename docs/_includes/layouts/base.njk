@@ -5,17 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ title or "Faux News" }}</title>
       <link rel="stylesheet" href="{{ '/styles.css' | url }}">
+        <!-- Site favicon (works with GitHub Pages pathPrefix via Eleventy url filter) -->
+        <link rel="icon" href="{{ '/favicon.ico' | url }}" sizes="any">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen" data-path-prefix="{{ '/' | url }}">
     <div class="relative min-h-screen">
         <!-- Background pattern -->
         <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23334155\" fill-opacity=\"0.05\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"1\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] pointer-events-none"></div>
         
         <!-- Header -->
-        <header class="relative z-10 bg-dark-600/90 backdrop-blur-xl border-b border-dark-200/20 sticky top-0">
+    <header class="z-10 bg-dark-600/90 backdrop-blur-xl border-b border-dark-200/20 sticky top-0">
             <div class="max-w-7xl mx-auto px-6 py-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
@@ -53,8 +55,9 @@
     </div>
     
         <script>
-            window.PATH_PREFIX = "{{ '' | url }}";
-            window.INDEX_URL = "{{ '/index/index.json' | url }}";
+            // Use Eleventy's url filter so paths work on GitHub Pages or any subpath
+            window.PATH_PREFIX = {{ '/' | url | dump | safe }};
+            window.INDEX_URL = {{ '/index/index.json' | url | dump | safe }};
         </script>
     <script type="module" src="{{ '/src/main.js' | url }}"></script>
 </body>

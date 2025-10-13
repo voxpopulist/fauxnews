@@ -59,10 +59,31 @@ title: Faux News
 <!-- Results Section -->
 <section class="min-h-screen">
   <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8" id="results">
-    <div class="col-span-full flex flex-col items-center justify-center py-24">
-      <div class="animate-spin w-8 h-8 border-2 border-dark-300 border-t-primary-500 rounded-full mb-4"></div>
-      <p class="text-dark-100 text-lg">Loading clips...</p>
-    </div>
+    {# Server-side fallback: render first few samples so the page is usable without JS #}
+    {% if samples.samples and samples.samples.length %}
+      {% for s in samples.samples | slice(0, 8) %}
+        <article class="card-audio group relative bg-gradient-to-br from-dark-400/90 to-dark-500/90 backdrop-blur-sm border border-dark-200/20 rounded-2xl p-6">
+          <header class="relative z-10 mb-4">
+            <div class="inline-flex items-center gap-2 mb-2">
+              <div class="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">{{ s.speaker.charAt(0) }}</div>
+              <div>
+                <h3 class="text-lg font-bold text-dark-50">{{ s.speaker }}</h3>
+                <p class="text-xs text-dark-100 font-mono">{{ s.filename }}</p>
+              </div>
+            </div>
+          </header>
+          <div class="mb-4">
+            <audio class="w-full rounded-lg" controls preload="none" src="{{ s.mp3Src }}"></audio>
+          </div>
+          <div class="mt-4 text-dark-100 text-sm">{{ s.preview }}</div>
+        </article>
+      {% endfor %}
+    {% else %}
+      <div class="col-span-full flex flex-col items-center justify-center py-24">
+        <div class="animate-spin w-8 h-8 border-2 border-dark-300 border-t-primary-500 rounded-full mb-4"></div>
+        <p class="text-dark-100 text-lg">Loading clips...</p>
+      </div>
+    {% endif %}
   </div>
 </section>
 

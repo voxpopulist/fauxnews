@@ -77,7 +77,7 @@ export function renderTranscriptFromVtt(container, vttText) {
     if (!line || line.toUpperCase() === 'WEBVTT') { i++; continue; }
     if (line.includes('-->')) {
       const m = line.match(/((?:\d{2}:)?\d{2}:\d{2}\.\d{3})\s*-->\s*((?:\d{2}:)?\d{2}:\d{2}\.\d{3})/);
-      let textLines = [];
+  let textLines = [];
       i++;
       while (i < lines.length) {
         const t = lines[i].trim();
@@ -86,12 +86,14 @@ export function renderTranscriptFromVtt(container, vttText) {
         i++;
       }
       if (textLines.length) {
-        const li = document.createElement('li');
+  const li = document.createElement('li');
         li.className = 'border-l-2 border-primary-400/30 pl-4 py-2';
         
-        const ts = document.createElement('div');
-        ts.className = 'text-xs text-primary-400 font-mono mb-1';
-        ts.textContent = `${m?.[1] || ''} → ${m?.[2] || ''}`;
+  const ts = document.createElement('div');
+  ts.className = 'text-xs text-primary-400 font-mono mb-1';
+  const startTime = (m && m[1]) ? m[1] : '';
+  const endTime = (m && m[2]) ? m[2] : '';
+  ts.textContent = `${startTime || ''} → ${endTime || ''}`;
         
         const tx = document.createElement('div');
         tx.className = 'text-dark-100 leading-relaxed';

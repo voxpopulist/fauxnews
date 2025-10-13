@@ -4,9 +4,28 @@ import { siteUrl, observeCard, wireAudioPlayer, wireTranscript, activateAudio } 
 import { createAdvancedAudioPlayer } from './audio-player.js';
 import { initAdvancedSearch } from './advanced-search.js';
 import { initMicroInteractions } from './micro-interactions.js';
+import { AndroidFallbacks } from './android-fallbacks.js';
 
-// Expose activateAudio globally for IntersectionObserver
-window.activateAudio = activateAudio;
+// Minimal polyfills for older Safari / iOS
+if (!Element.prototype.replaceChildren) {
+  Element.prototype.replaceChildren = function(...nodes) {
+    while (this.firstChild) this.removeChild(this.firstChild);
+    for (const n of nodes) {
+      this.appendChild(typeof n === 'string' ? document.createTextNode(n) : n);
+    }
+  };
+}
+
+// Runtime initialization wrapped to avoid parse-time failures taking down the whole page
+try {
+  // Expose activateAudio globally for IntersectionObserver
+  window.activateAudio = activateAudio;
+} catch (err) {
+  // If activation fails, log and allow page to render without advanced features
+  // (keeps cards visible even if enhanced behaviors fail)
+  // eslint-disable-next-line no-console
+  console.error('Runtime initialization failed:', err);
+}
 
 window.PATH_PREFIX = window.PATH_PREFIX || document.body.getAttribute('data-path-prefix') || '/';
 window.INDEX_URL = window.INDEX_URL || window.PATH_PREFIX + 'index/index.json';
@@ -90,7 +109,7 @@ const state = {
   terms: new Map(),
   filtered: [],
   offset: 0,
-  pageSize: 40,
+  pageSize: window.innerWidth < 768 ? 12 : 40, // Smaller initial batch on mobile
   loaded: false,
   searchTimeout: null, // For debouncing search input
 };
@@ -175,7 +194,7 @@ function scrollToResults() {
 
 async function runSearch() {
   if (!state.loaded) await loadIndex();
-  const q = (searchInput?.value || '').trim();
+  const q = (searchInput && searchInput.value ? searchInput.value : '').trim();
   state.filtered = searchDocs(q, state);
   state.offset = 0;
   clearResults();
@@ -193,25 +212,27 @@ async function runSearch() {
   }
 }
 
-searchInput?.addEventListener('input', () => { 
-  // Clear existing timeout
-  if (state.searchTimeout) {
-    clearTimeout(state.searchTimeout);
-  }
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    // Clear existing timeout
+    if (state.searchTimeout) {
+      clearTimeout(state.searchTimeout);
+    }
   
   // Set new timeout for debounced search
   state.searchTimeout = setTimeout(() => {
     runSearch();
     // Clear highlight if query doesn't match active tag
-    const q = (searchInput?.value || '').trim();
+  const q = (searchInput && searchInput.value ? searchInput.value : '').trim();
     if (activeTagEl) {
-      const currentTag = activeTagEl?.dataset?.word || '';
+    const currentTag = (activeTagEl && activeTagEl.dataset && activeTagEl.dataset.word) || '';
       if (!q || q.toLowerCase() !== currentTag.toLowerCase()) {
         setActiveTagEl(null);
       }
     }
   }, 300); // 300ms delay
-});
+  });
+} // end if (searchInput)
 function activateTag(word, sourceEl) {
   if (!word || !searchInput) return;
   searchInput.value = word;
@@ -225,21 +246,40 @@ function activateTag(word, sourceEl) {
 tagButtons.forEach((btn) => {
   btn.addEventListener('click', (e) => {
     const target = e.currentTarget;
-    activateTag(target?.dataset?.word || '', target);
+  activateTag((target && target.dataset && target.dataset.word) || '', target);
   });
   // Keyboard accessibility: Enter/Space
   btn.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      activateTag(e.currentTarget?.dataset?.word || '', e.currentTarget);
+  activateTag((e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.word) || '', e.currentTarget);
     }
   });
 });
 
 (async () => {
   try {
+    // Check if we should use Android fallbacks
+    if (AndroidFallbacks.shouldUseFallbacks()) {
+      console.log('Using Android fallback mode');
+      await loadIndex();
+      AndroidFallbacks.initFallbacks(state.docs, siteUrl);
+      return;
+    }
+
     // Initialize micro-interactions first
     initMicroInteractions();
+    
+    // CRITICAL: Force reveal cards on Android immediately after micro-interactions
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      setTimeout(() => {
+        document.querySelectorAll('.animate-on-scroll').forEach(el => {
+          el.classList.remove('animate-on-scroll');
+          el.classList.add('in-view');
+        });
+      }, 100);
+    }
     
     // Initialize advanced search
     if (searchInput) {
@@ -255,6 +295,17 @@ tagButtons.forEach((btn) => {
     const loading = resultsEl.querySelector('.loading');
     if (loading) loading.remove();
   } catch (e) {
-    resultsEl.innerHTML = '<p class="empty">Failed to load clips.</p>';
+    console.error('Main initialization failed:', e);
+    // Try fallback mode on any error
+    try {
+      if (state.docs.length > 0) {
+        AndroidFallbacks.initFallbacks(state.docs, siteUrl);
+      } else {
+        resultsEl.innerHTML = '<p class="empty">Failed to load clips.</p>';
+      }
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError);
+      resultsEl.innerHTML = '<p class="empty">Failed to load clips.</p>';
+    }
   }
 })();

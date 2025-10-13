@@ -1,11 +1,11 @@
-name: Process Audio and Deploy Site
+name: Process Audio and Build Site
 
 on:
   push:
     branches: [ main ]
     paths: 
-      - 'input/**/*.aiff'
-      - 'input/**/*.flac'
+      - 'samples/**/*.flac'
+      - 'docs/**'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
     inputs:
@@ -15,13 +15,13 @@ on:
         default: 'Manual audio processing and deployment'
 
 permissions:
-  contents: write  # Changed from read to write to allow pushing
-  pages: write
-  id-token: write
+  contents: write  # allow pushing transcript/index updates
+  pages: write     # to deploy to GitHub Pages
+  id-token: write  # required by actions/deploy-pages
 
 concurrency:
-  group: "pages-audio-processing"
-  cancel-in-progress: false
+  group: "audio-processing-only"
+  cancel-in-progress: true
 
 jobs:
   generate-transcripts:
@@ -33,81 +33,110 @@ jobs:
       with:
         token: ${{ secrets.ACTIONS_TOKEN }}
         fetch-depth: 0  # Fetch full history for proper git operations
+    - name: Detect added/modified FLAC samples
+      id: changes
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ "${GITHUB_EVENT_NAME}" != "push" ]; then
+          echo "Manual or non-push event detected; skipping audio change detection."
+          NEW_COUNT=0
+          MOD_COUNT=0
+          HAS_CHANGES=false
+        else
+          git fetch --no-tags --prune --depth=2 origin "${GITHUB_REF#refs/heads/}" || true
+          BASE_SHA="${{ github.event.before }}"
+          if [ -z "$BASE_SHA" ] || ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            BASE_SHA=$(git rev-list --max-parents=0 HEAD | tail -n1)
+          fi
+          echo "Diffing $BASE_SHA -> $GITHUB_SHA"
+          CHANGED=$(git diff --name-status "$BASE_SHA" "$GITHUB_SHA" -- 'samples/**/*.flac' || true)
+          echo "$CHANGED" | sed 's/^/changed: /' || true
+          NEW_COUNT=$(echo "$CHANGED" | awk '$1=="A" {print $2}' | wc -l | tr -d ' ' || true)
+          MOD_COUNT=$(echo "$CHANGED" | awk '$1=="M" {print $2}' | wc -l | tr -d ' ' || true)
+          HAS_CHANGES=false
+          if [ "${NEW_COUNT:-0}" -gt 0 ] || [ "${MOD_COUNT:-0}" -gt 0 ]; then HAS_CHANGES=true; fi
+        fi
+        echo "new_count=$NEW_COUNT" >> "$GITHUB_OUTPUT"
+        echo "modified_count=$MOD_COUNT" >> "$GITHUB_OUTPUT"
+        echo "has_audio_changes=$HAS_CHANGES" >> "$GITHUB_OUTPUT"
       
-    # - name: Setup Python
-    #   uses: actions/setup-python@v5
-    #   with:
-    #     python-version: '3.11'
+    - name: Setup Python
+      if: steps.changes.outputs.has_audio_changes == 'true'
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-    # - name: Write Python requirements
-    #   run: |
-    #     echo "openai-whisper" > requirements.txt
+    - name: Write Python requirements
+      if: steps.changes.outputs.has_audio_changes == 'true'
+      run: |
+        echo "openai-whisper" > requirements.txt
 
-    # - name: Cache pip download cache
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: ~/.cache/pip
-    #     key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-pip-
+    - name: Cache pip download cache
+      if: steps.changes.outputs.has_audio_changes == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
-    # - name: Cache Python virtualenv
-    #   id: venv-cache
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: .venv
-    #     key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}-py311
+    - name: Cache Python virtualenv
+      if: steps.changes.outputs.has_audio_changes == 'true'
+      id: venv-cache
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}-py311
 
-    # - name: Create venv and install deps (on cache miss)
-    #   if: steps.venv-cache.outputs.cache-hit != 'true'
-    #   run: |
-    #     python -m venv .venv
-    #     . .venv/bin/activate
-    #     pip install --upgrade pip
-    #     pip install -r requirements.txt
+    - name: Create venv and install deps (on cache miss)
+      if: steps.changes.outputs.has_audio_changes == 'true' && steps.venv-cache.outputs.cache-hit != 'true'
+      run: |
+        python -m venv .venv
+        . .venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
 
-    # - name: Add venv to PATH
-    #   run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
+    - name: Add venv to PATH
+      if: steps.changes.outputs.has_audio_changes == 'true'
+      run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
 
-    # - name: Ensure Whisper cache directories exist
-    #   run: |
-    #     mkdir -p "$HOME/.cache/whisper" "$HOME/.cache/torch"
+    - name: Ensure Whisper cache directories exist
+      if: steps.changes.outputs.has_audio_changes == 'true'
+      run: |
+        mkdir -p "$HOME/.cache/whisper" "$HOME/.cache/torch"
 
-    # - name: Cache Whisper model files
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: |
-    #       ~/.cache/whisper
-    #       ~/.cache/torch
-    #     key: ${{ runner.os }}-whisper-models-v1
+    - name: Cache Whisper model files
+      if: steps.changes.outputs.has_audio_changes == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/whisper
+          ~/.cache/torch
+        key: ${{ runner.os }}-whisper-models-v1
         
-    # - name: Cache apt packages
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: |
-    #       /var/cache/apt/archives
-    #       /var/lib/apt/lists
-    #     key: ${{ runner.os }}-apt-${{ hashFiles('scripts/apt-packages.txt') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-apt-
+    - name: Cache apt packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          /var/cache/apt/archives
+          /var/lib/apt/lists
+        key: ${{ runner.os }}-apt-${{ hashFiles('scripts/apt-packages.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-
 
     - name: Install apt dependencies (ffmpeg)
       run: |
         sudo apt-get update
         sudo xargs -a scripts/apt-packages.txt apt-get install -y
 
-    - name: Run transcription script (OpenAI API)
+    - name: Run transcription script
+      if: steps.changes.outputs.has_audio_changes == 'true'
       env:
         VERBOSE: "0"
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
         chmod +x ./scripts/transcribe_flac.sh
-        ./scripts/transcribe_flac.sh input
-
-    - name: Organize files
-      run: |
-        chmod +x ./scripts/organize_files.sh
-        ./scripts/organize_files.sh input
+        ./scripts/transcribe_flac.sh samples
 
     - name: Convert FLAC to MP3 for web playback
       env:
@@ -116,31 +145,72 @@ jobs:
         chmod +x ./scripts/convert_to_mp3.sh
         ./scripts/convert_to_mp3.sh
 
+    - name: Organize generated transcripts into speaker/text folders
+      if: steps.changes.outputs.has_audio_changes == 'true'
+      run: |
+        set -euo pipefail
+        echo "Organizing transcripts into samples/*/*/text/..."
+        SAMPLES_DIR="${GITHUB_WORKSPACE:-$(pwd)}/samples"
+        # Find any transcript files that are not already in a text/ folder
+        find "$SAMPLES_DIR" -type f \( -iname "*.vtt" -o -iname "*.txt" -o -iname "*.srt" -o -iname "*.tsv" \) -print0 |
+        while IFS= read -r -d '' tf; do
+          # Skip files already inside a text/ directory
+          parent="$(basename "$(dirname "$tf")")"
+          if [ "$parent" = "text" ]; then
+            continue
+          fi
+          base="$(basename "$tf")"
+          name="${base%.*}"
+          # Find matching audio file to determine speaker location
+          audio="$(find "$SAMPLES_DIR" -type f -name "${name}.flac" -o -name "${name}.wav" -print -quit || true)"
+          if [ -z "$audio" ]; then
+            echo "No matching audio for $tf; leaving in place"
+            continue
+          fi
+          audio_dir="$(dirname "$audio")"
+          speaker_dir="$(dirname "$audio_dir")"
+          target_dir="$speaker_dir/text"
+          mkdir -p "$target_dir"
+          echo "Moving $tf -> $target_dir/$base"
+          git mv "$tf" "$target_dir/$base" 2>/dev/null || mv "$tf" "$target_dir/$base"
+        done
+
     - name: Setup Node.js for site build
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
         cache-dependency-path: 'docs/package-lock.json'
 
     - name: Install site dependencies
       run: |
         cd docs
-        npm install
+        npm ci
 
     - name: Build static site
+      env:
+        # Force root-relative URLs for custom domain deployment
+        PATH_PREFIX: '/'
       run: |
         cd docs
         npm run build
 
-    - name: Add text files to git and commit changes (excluding MP3s)
+    - name: Verify MP3s in build
+      run: |
+        MP3_COUNT=$(find docs/_site/samples -type f -name "*.mp3" | wc -l || true)
+        echo "MP3 files in build: $MP3_COUNT"
+        if [ "$MP3_COUNT" = "0" ]; then
+          echo "No MP3s found in built site. Check passthrough copy and conversion." >&2
+          exit 1
+        fi
+
+    - name: Add generated transcripts to git and commit
+      if: steps.changes.outputs.has_audio_changes == 'true'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        # Add only text files, not MP3s
-        find samples -name "*.txt" -o -name "*.vtt" -o -name "*.srt" -o -name "*.json" -o -name "*.tsv" | xargs git add
-        # Also add any new FLAC files that were moved
-        find samples -name "*.flac" | xargs git add
+        # Add only text files (transcripts), not MP3s or FLAC (already committed)
+        find samples -name "*.txt" -o -name "*.vtt" -o -name "*.srt" -o -name "*.json" -o -name "*.tsv" | xargs -r git add
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
@@ -148,21 +218,31 @@ jobs:
           git push
         fi
 
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-      
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v4
+    - name: Upload site artifact (for deploy job)
+      uses: actions/upload-artifact@v4
       with:
+        name: site-build
         path: ./docs/_site
-        
-  deploy:
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    needs: generate-transcripts
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: generate-transcripts
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Download site artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site-build
+          path: ./_site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+      - name: Deploy to Pages
         id: deployment
         uses: actions/deploy-pages@v4

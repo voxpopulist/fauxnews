@@ -8,7 +8,7 @@
     "predev": "npm run sync:audio",
     "dev": "npm run build:css:prod && npx @11ty/eleventy --serve --port=4321",
     "dev:watch": "npm run build:css & npx @11ty/eleventy --serve --port=4321",
-    "build:js": "esbuild src/main.js --bundle --minify --outdir=public/src --format=esm",
+  "build:js": "esbuild src/main.js src/android-fallbacks.js --bundle --minify --outdir=public/src --format=esm --target=safari13",
     "build:css": "npx tailwindcss -i src/styles.css -o public/styles.css --watch",
     "build:css:prod": "npx tailwindcss -i src/styles.css -o public/styles.css --minify",
     "prebuild": "npm run sync:audio && node scripts/build-index.mjs && npm run build:js && npm run build:css:prod",

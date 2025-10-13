@@ -1,7 +1,8 @@
 // Enhanced card rendering with modern design
 export function createCard(doc, {siteUrl, observeCard, wireAudioPlayer, wireTranscript}) {
   const article = document.createElement('article');
-  article.className = 'group relative bg-gradient-to-br from-dark-400/90 to-dark-500/90 backdrop-blur-sm border border-dark-200/20 rounded-2xl p-6 hover:border-primary-400/30 transition-all duration-500 hover:transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary-500/10 animate-on-scroll';
+  // Add legacy 'card' class for test compatibility
+  article.className = 'group relative bg-gradient-to-br from-dark-400/90 to-dark-500/90 backdrop-blur-sm border border-dark-200/20 rounded-2xl p-6 hover:border-primary-400/30 transition-all duration-500 hover:transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary-500/10 card card-audio';
   article.dataset.transcriptSrc = doc.transcriptSrc || '';
   article.dataset.transcriptType = (doc.transcriptSrc && doc.transcriptSrc.endsWith('.txt')) ? 'txt' : 'vtt';
 
@@ -44,7 +45,8 @@ export function createCard(doc, {siteUrl, observeCard, wireAudioPlayer, wireTran
   audioContainer.className = 'relative';
   
   const audio = document.createElement('audio');
-  audio.className = 'w-full rounded-lg';
+  // Add legacy 'card__player' class for test compatibility
+  audio.className = 'w-full rounded-lg card__player';
   audio.controls = true;
   audio.setAttribute('preload', 'none');
   audio.dataset.src = siteUrl(doc.mp3Src);

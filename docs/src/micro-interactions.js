@@ -13,14 +13,50 @@ export class MicroInteractions {
   }
   
   setupScrollAnimations() {
-    // Intersection Observer for scroll animations
+    // Skip scroll animations on Android for immediate card display
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      // On Android, show cards immediately without animation
+      const selectors = '.card, .card-audio, .tag-item, .glass-panel';
+      const elements = Array.from(document.querySelectorAll(selectors));
+      const reveal = (el) => {
+        el.classList.remove('animate-on-scroll');
+        el.classList.add('in-view');
+      };
+      elements.forEach(reveal);
+
+      // Also reveal any elements added later (e.g., infinite scroll)
+      const container = document.getElementById('results');
+      if (container && 'MutationObserver' in window) {
+        const mo = new MutationObserver((mutationList) => {
+          mutationList.forEach(m => {
+            if (!m.addedNodes) return;
+            Array.from(m.addedNodes).forEach(node => {
+              if (!(node instanceof HTMLElement)) return;
+              const targets = (node.matches && node.matches(selectors))
+                ? [node]
+                : Array.from(node.querySelectorAll?.(selectors) || []);
+              targets.forEach(reveal);
+            });
+          });
+        });
+        mo.observe(container, { childList: true, subtree: true });
+      }
+      return;
+    }
+
+    // Desktop/iOS: Use intersection observer for smooth animations
+    const selectors = '.card, .card-audio, .tag-item, .glass-panel';
+    const elements = Array.from(document.querySelectorAll(selectors));
+    
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             entry.target.classList.add('in-view');
             // Add staggered animation delay for multiple elements
-            const delay = Array.from(entry.target.parentNode.children).indexOf(entry.target) * 100;
+            const siblings = entry.target.parentNode ? Array.from(entry.target.parentNode.children) : [];
+            const delay = Math.max(0, siblings.indexOf(entry.target)) * 100;
             entry.target.style.animationDelay = `${delay}ms`;
           }
         });
@@ -29,10 +65,51 @@ export class MicroInteractions {
         rootMargin: '0px 0px -50px 0px'
       });
       
-      // Observe all cards and other animatable elements
-      document.querySelectorAll('.card-audio, .tag-item, .glass-panel').forEach(el => {
+      // Observe all cards and other animatable elements present initially
+      elements.forEach(el => {
         el.classList.add('animate-on-scroll');
         observer.observe(el);
+        // Safety: if already in viewport on first paint, reveal immediately
+        const r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight && r.bottom > 0) {
+          el.classList.add('in-view');
+        }
+      });
+
+      // Also observe dynamically added cards (rendered after initial load)
+      const container = document.getElementById('results');
+      if (container && 'MutationObserver' in window) {
+        const mo = new MutationObserver((mutationList) => {
+          mutationList.forEach(m => {
+            m.addedNodes && Array.from(m.addedNodes).forEach(node => {
+              if (!(node instanceof HTMLElement)) return;
+              // Register the node if it matches or contains matching elements
+              const targets = node.matches && node.matches('.card, .card-audio, .tag-item, .glass-panel')
+                ? [node]
+                : Array.from(node.querySelectorAll?.('.card, .card-audio, .tag-item, .glass-panel') || []);
+              targets.forEach(t => {
+                if (isAndroid) {
+                  t.classList.remove('animate-on-scroll');
+                  t.classList.add('in-view');
+                } else {
+                  t.classList.add('animate-on-scroll');
+                  observer.observe(t);
+                  const r = t.getBoundingClientRect();
+                  if (r.top < window.innerHeight && r.bottom > 0) {
+                    t.classList.add('in-view');
+                  }
+                }
+              });
+            });
+          });
+        });
+        mo.observe(container, { childList: true, subtree: true });
+      }
+    } else {
+      // Fallback: reveal immediately if IO not supported
+      elements.forEach(el => {
+        el.classList.add('in-view');
+        el.classList.remove('animate-on-scroll');
       });
     }
   }

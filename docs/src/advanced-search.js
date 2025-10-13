@@ -102,7 +102,7 @@ export class AdvancedSearch {
       
       // Extract popular terms
       this.indexTerms = Object.keys(index.terms || {})
-        .sort((a, b) => (index.terms[b]?.length || 0) - (index.terms[a]?.length || 0))
+        .sort((a, b) => (((index.terms && index.terms[b] && index.terms[b].length) || 0) - ((index.terms && index.terms[a] && index.terms[a].length) || 0)))
         .slice(0, 100); // Top 100 terms
     } catch (error) {
       console.warn('Could not load search index for suggestions:', error);

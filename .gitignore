@@ -29,3 +29,9 @@ Thumbs.db
 input/test-samples
 test-output*
 .envrc
+tests/utils/screenshots
+tests/.env
+
+# Local act secrets
+.act.env
+*.wav

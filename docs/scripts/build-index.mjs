@@ -53,22 +53,47 @@ async function main() {
           const vtt = path.join(textDir, `${base}.vtt`);
           const txt = path.join(textDir, `${base}.txt`);
 
+          // If transcripts are not where we expect, search for them anywhere under samplesRoot
+          const findAny = (root, filename) => {
+            let found = null;
+            function walk(dir) {
+              const entries = fs.readdirSync(dir, { withFileTypes: true });
+              for (const e of entries) {
+                if (found) return;
+                if (e.name.startsWith('.')) continue;
+                const p = path.join(dir, e.name);
+                if (e.isDirectory()) { walk(p); continue; }
+                if (e.name === filename) { found = p; return; }
+              }
+            }
+            try { walk(root); } catch (err) { /* ignore */ }
+            return found;
+          };
+
           let transcriptText = "";
           let transcriptSrc = null;
-          if (fs.existsSync(vtt)) {
+          let vttPath = vtt;
+          let txtPath = txt;
+          if (!fs.existsSync(vttPath) && !fs.existsSync(txtPath)) {
+            const altVtt = findAny(samplesRoot, `${base}.vtt`);
+            const altTxt = findAny(samplesRoot, `${base}.txt`);
+            if (altVtt) vttPath = altVtt;
+            if (altTxt) txtPath = altTxt;
+          }
+          if (fs.existsSync(vttPath)) {
             try {
               const v = fs.readFileSync(vtt, "utf-8");
               transcriptText = v
                 .split(/\r?\n/)
                 .filter((ln) => ln && !ln.includes("-->") && ln.toUpperCase() !== "WEBVTT")
                 .join(" ");
-              transcriptSrc = path.join("/samples", path.relative(samplesRoot, vtt)).replace(/\\/g, "/");
+            transcriptSrc = path.join("/samples", path.relative(samplesRoot, vttPath)).replace(/\\/g, "/");
             } catch {}
-          } else if (fs.existsSync(txt)) {
+          } else if (fs.existsSync(txtPath)) {
             try {
               const t = fs.readFileSync(txt, "utf-8");
               transcriptText = t.trim();
-              transcriptSrc = path.join("/samples", path.relative(samplesRoot, txt)).replace(/\\/g, "/");
+            transcriptSrc = path.join("/samples", path.relative(samplesRoot, txtPath)).replace(/\\/g, "/");
             } catch {}
           }
           if (!transcriptText) continue; // skip if no transcript available

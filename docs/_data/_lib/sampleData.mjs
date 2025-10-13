@@ -86,6 +86,32 @@ export function loadSampleData() {
       const vttFile = path.join(textDir, `${baseName}.vtt`);
       const mp3File = path.join(audioDir, `${baseName}.mp3`);
 
+      // If transcripts are not in the expected text/ sibling, try to find them anywhere under samplesRoot
+      const findAny = (root, filename) => {
+        let found = null;
+        function walk(dir) {
+          const entries = fs.readdirSync(dir, { withFileTypes: true });
+          for (const e of entries) {
+            if (found) return;
+            if (e.name.startsWith('.')) continue;
+            const p = path.join(dir, e.name);
+            if (e.isDirectory()) { walk(p); continue; }
+            if (e.name === filename) { found = p; return; }
+          }
+        }
+        try { walk(root); } catch (err) { /* ignore */ }
+        return found;
+      };
+
+      let vttCandidate = vttFile;
+      let txtCandidate = txtFile;
+      if (!fs.existsSync(vttCandidate) && !fs.existsSync(txtCandidate)) {
+        const altVtt = findAny(samplesRoot, `${baseName}.vtt`);
+        const altTxt = findAny(samplesRoot, `${baseName}.txt`);
+        if (altVtt) vttCandidate = altVtt;
+        if (altTxt) txtCandidate = altTxt;
+      }
+
       // Determine speaker path early so we can build audio URLs
       const speakerPathSegments = [...segments];
       if (speakerPathSegments[speakerPathSegments.length - 1] === "audio") {
@@ -105,21 +131,21 @@ export function loadSampleData() {
       let transcriptFlattened = "";
       let transcriptPath = null;
       let transcriptType = null;
-      if (fs.existsSync(vttFile)) {
+      if (fs.existsSync(vttCandidate)) {
         try {
-          const vttContent = fs.readFileSync(vttFile, "utf-8");
+          const vttContent = fs.readFileSync(vttCandidate, "utf-8");
           transcript = parseTranscriptVtt(vttContent);
           transcriptFlattened = transcript.map((segment) => segment.text).join(" ");
-          transcriptPath = path.join("/samples", path.relative(samplesRoot, vttFile)).replace(/\\/g, "/");
+          transcriptPath = path.join("/samples", path.relative(samplesRoot, vttCandidate)).replace(/\\/g, "/");
           transcriptType = "vtt";
         } catch {}
-      } else if (fs.existsSync(txtFile)) {
+      } else if (fs.existsSync(txtCandidate)) {
         try {
-          const txtContent = fs.readFileSync(txtFile, "utf-8");
+          const txtContent = fs.readFileSync(txtCandidate, "utf-8");
           if (txtContent.trim()) {
             transcript = [{ timestamp: "00:00.000", text: txtContent.trim() }];
             transcriptFlattened = txtContent.trim();
-            transcriptPath = path.join("/samples", path.relative(samplesRoot, txtFile)).replace(/\\/g, "/");
+            transcriptPath = path.join("/samples", path.relative(samplesRoot, txtCandidate)).replace(/\\/g, "/");
             transcriptType = "txt";
           }
         } catch {}
