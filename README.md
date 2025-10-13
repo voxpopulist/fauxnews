@@ -1,3 +1,10 @@
+# Faux News
+
+## CI Status
+
+![Nightly E2E Tests](https://github.com/voxpopulist/clipservatives/actions/workflows/nightly-tests.yml/badge.svg)
+![Build & Deploy Site](https://github.com/voxpopulist/clipservatives/actions/workflows/build-site.yml/badge.svg)
+
 # Faux News Audio Samples
 
 

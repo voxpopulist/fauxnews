@@ -1,12 +1,8 @@
-import { fileURLToPath } from "url";
-import path from "path";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 export default function(eleventyConfig) {
-  eleventyConfig.addPassthroughCopy({ "public": "." });
-  // Remove old styles.css passthrough since we're using Tailwind now
+  // Ensure audio/transcript assets are included in the built site
+  eleventyConfig.addPassthroughCopy({ samples: 'samples' });
+  // Passthrough for built assets from /public (css/js)
+  eleventyConfig.addPassthroughCopy({ public: '.' });
 
   eleventyConfig.setServerOptions({
     port: 4321,
@@ -15,14 +11,14 @@ export default function(eleventyConfig) {
 
   return {
     dir: {
-      input: ".",
-      includes: "_includes",
-      data: "_data",
-      output: "_site"
+      input: '.',
+      includes: '_includes',
+      data: '_data',
+      output: '_site'
     },
-  pathPrefix: "/fauxnews/",
-    htmlTemplateEngine: "njk",
-    dataTemplateEngine: "njk",
-    markdownTemplateEngine: "njk"
+    pathPrefix: '/',
+    htmlTemplateEngine: 'njk',
+    dataTemplateEngine: 'njk',
+    markdownTemplateEngine: 'njk'
   };
 }

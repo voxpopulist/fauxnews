@@ -1,0 +1,58 @@
+name: Nightly E2E Tests
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # daily at 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install browsers
+        uses: browser-actions/setup-chrome@v1
+      - name: Setup Firefox
+        uses: browser-actions/setup-firefox@v1
+
+      - name: Install site dependencies (docs)
+        run: |
+          cd docs
+          npm ci
+
+      - name: Start Eleventy dev server
+        run: |
+          cd docs
+          npx @11ty/eleventy --serve --port=4321 &
+          for i in {1..30}; do curl -fsS http://localhost:4321 >/dev/null && break || sleep 1; done
+
+      - name: Install test dependencies
+        run: |
+          cd tests
+          npm ci
+
+      - name: Run critical suite (Chrome, Firefox, Mobile emulation)
+        env:
+          HEADLESS: 'true'
+          TEST_URL: 'http://localhost:4321'
+        run: |
+          cd tests
+          npm run test:critical
+
+      - name: Run cross-browser comparison
+        env:
+          HEADLESS: 'true'
+          TEST_URL: 'http://localhost:4321'
+        run: |
+          cd tests
+          npm run test:cross-browser
