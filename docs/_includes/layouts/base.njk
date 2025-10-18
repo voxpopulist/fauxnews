@@ -3,7 +3,30 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ title or "Faux News" }}</title>
+    <title>{{ title or "Faux News from Vox Populist" }}</title>
+    <meta name="description" content="Searchable audio clips and AI transcripts from right-wing media. Warning: Contents may cause extreme facepalming. Free for use in your next track, podcast, or meme.">
+    
+    {% set site_base = 'http://www.voxpopulist.com' %}
+    <link rel="canonical" href="{{ site_base }}{{ '/' | url }}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ site_base }}{{ '/' | url }}">
+    <meta property="og:title" content="Faux News from Vox Populist">
+    <meta property="og:description" content="Searchable audio clips and AI transcripts from right-wing media. Warning: Contents may cause extreme facepalming. Use in your next track, podcast, or meme.">
+    <meta property="og:image" content="{{ site_base }}{{ '/og-image.png' | url }}">
+    <meta property="og:image:secure_url" content="{{ site_base | replace('http://', 'https://') }}{{ '/og-image.png' | url }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Faux News from Vox Populist">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ site_base }}{{ '/' | url }}">
+    <meta property="twitter:title" content="Faux News from Vox Populist">
+    <meta property="twitter:description" content="Searchable audio clips and AI transcripts from right-wing media. Warning: Contents may cause extreme facepalming.">
+    <meta property="twitter:image" content="{{ site_base }}{{ '/og-image.png' | url }}">
+    
       <link rel="stylesheet" href="{{ '/styles.css' | url }}">
         <!-- Site favicon (works with GitHub Pages pathPrefix via Eleventy url filter) -->
         <link rel="icon" href="{{ '/favicon.ico' | url }}" sizes="any">
@@ -29,10 +52,10 @@
                         <div>
                             <h1 class="text-xl font-bold text-dark-50">
                                 <a href="{{ '/' | url }}" class="hover:text-primary-300 transition-colors duration-200">
-                                    Faux News
+                                    Faux News from Vox Populist
                                 </a>
                             </h1>
-                            <p class="text-sm text-dark-100 hidden sm:block">Political audio clips & transcripts</p>
+                            <p class="text-sm text-dark-100 hidden sm:block">Make Audio Great Again</p>
                         </div>
                     </div>
                 </div>
@@ -48,7 +71,7 @@
         <footer class="relative z-10 bg-dark-600/50 backdrop-blur-xl border-t border-dark-200/20 mt-24">
             <div class="max-w-7xl mx-auto px-6 py-8">
                 <div class="text-center text-dark-100">
-                    <p class="text-sm">&copy; 2024 Faux News. Audio content belongs to respective media organizations.</p>
+                    <p class="text-sm">&copy; 2025 Vox Populist. Audio content belongs to respective media organizations.</p>
                 </div>
             </div>
         </footer>

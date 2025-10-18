@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 export default function(eleventyConfig) {
   // Determine pathPrefix dynamically to support GitHub Pages project sites
   // Defaults to '/' for local dev and root-hosted sites.
@@ -18,12 +20,22 @@ export default function(eleventyConfig) {
       dynamicPathPrefix = process.env.PATH_PREFIX;
     }
   } catch {}
+  // If using a custom domain (CNAME present), serve from root
+  try {
+    if (fs.existsSync('./CNAME')) {
+      dynamicPathPrefix = '/';
+    }
+  } catch {}
   // Ensure audio/transcript assets are included in the built site
   eleventyConfig.addPassthroughCopy({ samples: 'samples' });
   // Passthrough for built assets from /public (css/js)
   eleventyConfig.addPassthroughCopy({ public: '.' });
   // Passthrough root-level favicon so it lives at /favicon.ico in the output
   eleventyConfig.addPassthroughCopy('favicon.ico');
+  // Passthrough Open Graph image for social media previews
+  eleventyConfig.addPassthroughCopy('og-image.png');
+  // Passthrough CNAME for GitHub Pages custom domain
+  eleventyConfig.addPassthroughCopy('CNAME');
 
   eleventyConfig.setServerOptions({
     port: 4321,
