@@ -24,6 +24,8 @@ export default function(eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ public: '.' });
   // Passthrough root-level favicon so it lives at /favicon.ico in the output
   eleventyConfig.addPassthroughCopy('favicon.ico');
+  // Passthrough Open Graph image for social media previews
+  eleventyConfig.addPassthroughCopy('og-image.png');
 
   eleventyConfig.setServerOptions({
     port: 4321,

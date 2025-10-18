@@ -115,37 +115,14 @@ export class MicroInteractions {
   }
   
   setupHoverEffects() {
-    // Enhanced hover effects for cards
-    document.addEventListener('mouseover', (e) => {
-      const card = e.target.closest('.card-audio');
-      if (card) {
-        card.classList.add('hover-lift', 'hover-glow');
-        this.addRippleEffect(card, e);
-      }
-      
-      // Button hover effects
-      const button = e.target.closest('button, .btn-primary, .btn-secondary');
-      if (button && !button.disabled) {
-        button.style.transform = 'translateY(-1px)';
-      }
-    });
-    
-    document.addEventListener('mouseout', (e) => {
-      const card = e.target.closest('.card-audio');
-      if (card) {
-        card.classList.remove('hover-lift', 'hover-glow');
-      }
-      
-      const button = e.target.closest('button, .btn-primary, .btn-secondary');
-      if (button) {
-        button.style.transform = '';
-      }
-    });
+    // Use pure CSS hover states to avoid flicker caused by mouseover/mouseout bubbling.
+    // Card and button components already include Tailwind hover styles.
+    // No JS hover handlers are needed.
   }
   
   setupClickFeedback() {
     document.addEventListener('click', (e) => {
-      const clickable = e.target.closest('button, .tag-item, .card-audio, a');
+      const clickable = e.target.closest('button, .tag-item, a');
       if (clickable) {
         this.addClickAnimation(clickable, e);
       }
