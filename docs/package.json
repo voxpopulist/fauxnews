@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
-    "autoprefixer": "^10.4.21",
+    "autoprefixer": "^10.4.22",
     "canvas": "^3.2.0",
     "esbuild": "^0.25.10",
     "postcss": "^8.5.6",
